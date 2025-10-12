@@ -1,6 +1,6 @@
 from typing import List, Dict
 from ..models.player_stats import PlayerMatch
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class DataValidator:
@@ -9,7 +9,8 @@ class DataValidator:
         matched = sum(1 for m in matches if getattr(m, "matched", False))
         unmatched = [getattr(m, "csv_name", None) for m in matches if not getattr(m, "matched", False)]
         report = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            # use timezone-aware UTC timestamp
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "total_csv_players": total_csv,
             "total_nba_players": total_nba_players,
             "matched_players": matched,

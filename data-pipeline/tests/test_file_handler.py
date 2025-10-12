@@ -1,4 +1,3 @@
-import os
 from src.utils.file_handler import FileHandler
 
 

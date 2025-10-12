@@ -60,11 +60,39 @@ class NameMatcher:
                     alias_map = json.load(fh)
         except Exception:
             alias_map = {}
+        # Precompute normalized names and build an index: (last_name, first_initial) -> list of nba dicts
+        nba_index = {}
+        nba_norm = {}
+        for nba in nba_players:
+            nba_name_raw = nba.get("PLAYER_NAME") or nba.get("PLAYER") or nba.get("name") or ""
+            nn = self.normalize_name(nba_name_raw)
+            nba_norm[id(nba)] = nn
+            parts = nn.split()
+            if parts:
+                last = parts[-1]
+                first_initial = parts[0][0] if parts[0] else ""
+                key = (last, first_initial)
+            else:
+                key = ("", "")
+            nba_index.setdefault(key, []).append(nba)
+
         for csv in csv_players:
             best = (None, 0.0)
             nname = self.normalize_name(csv.name)
             # First pass: deterministic matches
-            for nba in nba_players:
+            # determine candidate set using index; fallback to all players
+            parts = nname.split()
+            if parts:
+                last = parts[-1]
+                first_initial = parts[0][0] if parts[0] else ""
+                candidates = nba_index.get((last, first_initial), [])
+            else:
+                candidates = []
+            # always include a small fallback to all players if candidate list is empty
+            if not candidates:
+                candidates = nba_players
+
+            for nba in candidates:
                 nba_name_raw = nba.get("PLAYER_NAME") or nba.get("PLAYER") or nba.get("name") or ""
                 nba_name = self.normalize_name(nba_name_raw)
                 # alias override
@@ -82,10 +110,12 @@ class NameMatcher:
                         best = (nba, 0.98)
                         break
             else:
-                # fallback: fuzzy matching over all players
-                for nba in nba_players:
+                # fallback: fuzzy matching over candidate set (or all players if candidates were filled earlier)
+                for nba in candidates:
                     nba_name = nba.get("PLAYER_NAME") or nba.get("PLAYER") or nba.get("name") or ""
-                    score = self.calculate_similarity(nname, self.normalize_name(nba_name))
+                    # reuse precomputed normalization if available
+                    nn = nba_norm.get(id(nba)) or self.normalize_name(nba_name)
+                    score = self.calculate_similarity(nname, nn)
                     if score > best[1]:
                         best = (nba, score)
             matched = best[1] >= self.threshold

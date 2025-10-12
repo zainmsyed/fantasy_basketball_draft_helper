@@ -30,3 +30,6 @@ def test_data_validator_report_fields():
     report = dv.generate_validation_report([], [], 1.23, total_nba_players=450)
     assert "timestamp" in report
     assert report["total_nba_players"] == 450
+    # performance_metrics may be added by the pipeline
+    # generation function itself doesn't add it, so ensure it's absent by default
+    assert "performance_metrics" not in report
