@@ -1,50 +1,93 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+Version change: 0.0.0 → 1.0.0
+Modified principles: N/A (initial creation)
+Added sections: All core principles and governance
+Removed sections: N/A
+Templates requiring updates: ✅ All templates reviewed for consistency
+Follow-up TODOs: None
+-->
+
+# Basketball Draft Helper Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Modular Architecture
+Every feature MUST be implemented as an independent, self-contained module with clear boundaries and minimal coupling. Modules MUST have single responsibilities, well-defined interfaces, and be independently testable. Shared functionality MUST be extracted into reusable utilities rather than duplicated across modules.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+**Rationale**: Modular architecture ensures maintainability, testability, and enables independent development of features like CSV processing, ranking algorithms, and draft tracking.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Minimal Dependencies (NON-NEGOTIABLE)
+Dependencies MUST be justified and minimized. Each dependency MUST provide significant value that cannot be reasonably implemented in-house. No duplicate functionality across dependencies. Dependencies MUST be actively maintained, well-documented, and have clear upgrade paths.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**Rationale**: Minimal dependencies reduce bundle size, security vulnerabilities, and maintenance overhead while ensuring the application remains lightweight and fast-loading.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Pure Functions First
+Business logic MUST be implemented as pure functions whenever possible. Side effects MUST be isolated to dedicated service layers. Functions MUST have predictable inputs/outputs, be easily testable, and free of hidden dependencies.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: Pure functions ensure predictable behavior for critical calculations like Z-score rankings and enable reliable testing of complex draft algorithms.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Performance-First Design
+All user interactions MUST respond within 100ms. CSV processing MUST complete within 3 seconds for 200 players. Bundle size MUST remain under 1MB. Memory usage MUST be optimized for large datasets. Performance regressions MUST be caught before deployment.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+**Rationale**: Fantasy draft tools are used in time-sensitive situations where performance directly impacts user experience and decision-making quality.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Client-Side Data Sovereignty
+All data processing MUST occur client-side. No external API dependencies for core functionality during drafts. User data MUST remain in browser local storage. Offline functionality MUST be preserved for critical features.
+
+**Rationale**: Draft situations require reliability and privacy. Users must maintain full control over their data without external service dependencies.
+
+## Development Standards
+
+### Code Quality Requirements
+- **TypeScript First**: All new code MUST use TypeScript for type safety and documentation
+- **Consistent Naming**: Use clear, descriptive names following established patterns (camelCase for variables/functions, PascalCase for components)
+- **Single Responsibility**: Each function/class MUST have one clear purpose
+- **Documentation**: All public interfaces MUST have JSDoc comments
+- **Error Handling**: All async operations MUST include proper error handling and user feedback
+
+### Testing Requirements
+- **Algorithm Testing**: Z-score calculations, punt strategies, and ranking algorithms MUST have comprehensive unit tests
+- **Integration Testing**: CSV upload, data merging, and draft tracking workflows MUST have integration tests
+- **Performance Testing**: Large dataset processing MUST be benchmarked and monitored
+- **Cross-Browser Testing**: Core functionality MUST work across Chrome, Firefox, Safari, and Edge
+
+### File Organization Standards
+```
+src/
+├── modules/           # Feature modules (csv-processor, ranking-engine, draft-tracker)
+├── utils/            # Shared utilities (calculations, validators, formatters)
+├── types/            # TypeScript type definitions
+├── data/             # Static data files (last_year_stats.json)
+└── services/         # Side-effect services (storage, export)
+```
+
+## Technology Constraints
+
+### Approved Technology Stack
+- **Build Tool**: Vite (fast builds, excellent development experience)
+- **Framework**: Alpine.js (lightweight reactivity, minimal learning curve)
+- **Styling**: Tailwind CSS + DaisyUI (utility-first, component library)
+- **Data Table**: Tabulator (feature-complete table functionality)
+- **Storage**: LocalForage (enhanced localStorage with fallbacks)
+- **CSV Processing**: PapaParse (reliable, well-tested CSV parser)
+- **Utilities**: Lodash (battle-tested utility functions)
+
+### Technology Restrictions
+- **No Heavy Frameworks**: React, Vue, Angular are prohibited for this project's scope
+- **No Backend Dependencies**: Express, databases, or server-side processing are prohibited
+- **No External APIs**: Live data fetching during drafts is prohibited
+- **No Large Libraries**: Libraries >100KB must be justified and approved
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### Amendment Process
+Constitution changes MUST follow semantic versioning: MAJOR for breaking principle changes, MINOR for new principles, PATCH for clarifications. All amendments MUST include impact analysis, migration plan, and template updates. Changes affecting development workflow MUST be approved before implementation.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### Compliance Verification
+All pull requests MUST verify compliance with these principles. Architecture decisions MUST be documented with principle alignment justification. Performance regressions MUST be blocked from merging. Code reviews MUST enforce modular design and minimal dependencies.
+
+### Exception Handling
+Exceptions to these principles MUST be documented with specific justification, time-bound approval, and remediation plan. Emergency fixes MAY bypass non-critical principles but MUST include follow-up tasks for compliance restoration.
+
+**Version**: 1.0.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-12

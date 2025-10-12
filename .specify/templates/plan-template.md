@@ -17,21 +17,25 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: TypeScript + ES2022 (compiled to ES2020 for browser compatibility)  
+**Primary Dependencies**: Alpine.js (reactivity), Tailwind CSS + DaisyUI (styling), Tabulator (data tables)  
+**Storage**: LocalForage (enhanced localStorage) - client-side only  
+**Testing**: Vitest (fast unit testing), Playwright (integration testing)  
+**Target Platform**: Modern browsers (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)  
+**Project Type**: Single-page web application (frontend only)  
+**Performance Goals**: <100ms UI interactions, <3s CSV processing (200 players), <1MB bundle size  
+**Constraints**: No backend dependencies, offline-capable, client-side data processing only  
+**Scale/Scope**: 200 players max, 9 fantasy categories, local storage under 5MB
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] **Modular Architecture**: Feature implementation uses independent, self-contained modules with clear boundaries
+- [ ] **Minimal Dependencies**: All dependencies justified; no duplicate functionality; bundle size impact assessed
+- [ ] **Pure Functions First**: Business logic implemented as pure functions; side effects isolated
+- [ ] **Performance-First Design**: Response times <100ms verified; processing times <3s for 200 players confirmed
+- [ ] **Client-Side Data Sovereignty**: No external API dependencies; offline functionality preserved
 
 ## Project Structure
 
@@ -56,17 +60,21 @@ specs/[###-feature]/
 -->
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+# Option 1: Single project (Basketball Draft Helper - Frontend Only)
 src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+├── modules/          # Feature modules (csv-processor, ranking-engine, draft-tracker)
+├── utils/           # Shared utilities (calculations, validators, formatters)
+├── types/           # TypeScript type definitions
+├── data/            # Static data files (last_year_stats.json)
+└── services/        # Side-effect services (storage, export)
 
 tests/
-├── contract/
-├── integration/
-└── unit/
+├── unit/           # Pure function and module tests
+├── integration/    # Workflow and data processing tests
+└── performance/    # Benchmarks for large datasets
+
+public/
+└── data/           # Static JSON files (bundled with app)
 
 # [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/

@@ -17,10 +17,10 @@ description: "Task list template for feature implementation"
 - Include exact file paths in descriptions
 
 ## Path Conventions
-- **Single project**: `src/`, `tests/` at repository root
+- **Frontend-only project**: `src/modules/`, `src/utils/`, `src/types/`, `src/services/`, `tests/` at repository root
 - **Web app**: `backend/src/`, `frontend/src/`
 - **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- Paths shown below assume frontend-only project per Basketball Draft Helper architecture
 
 <!-- 
   ============================================================================
@@ -45,9 +45,10 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+- [ ] T001 Create modular project structure per constitution (src/modules/, src/utils/, src/types/, src/services/)
+- [ ] T002 Initialize TypeScript + Vite project with approved dependencies (Alpine.js, Tailwind, Tabulator)
+- [ ] T003 [P] Configure ESLint, Prettier, and TypeScript strict mode for code quality
+- [ ] T004 [P] Setup Vitest for unit testing and performance benchmarking
 
 ---
 
@@ -59,12 +60,12 @@ description: "Task list template for feature implementation"
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T005 Setup LocalForage for client-side data persistence (no external storage)
+- [ ] T006 [P] Create TypeScript interfaces for Player, Strategy, and Team entities
+- [ ] T007 [P] Implement pure function utilities for statistical calculations (Z-scores, averages)
+- [ ] T008 Create modular service interfaces for CSV processing, ranking, and draft tracking
+- [ ] T009 Setup error handling patterns for user feedback (failed uploads, calculation errors)
+- [ ] T010 Configure performance monitoring for 100ms UI response requirement
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -80,17 +81,18 @@ Examples of foundational tasks (adjust based on your project):
 
 **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T011 [P] [US1] Unit test for CSV parsing module in tests/unit/test_csv_processor.ts
+- [ ] T012 [P] [US1] Integration test for complete upload workflow in tests/integration/test_upload_flow.ts
+- [ ] T013 [P] [US1] Performance test for 200 player processing in tests/performance/test_large_datasets.ts
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+- [ ] T014 [P] [US1] Create Player interface and types in src/types/player.ts
+- [ ] T015 [P] [US1] Create CSV processor module in src/modules/csv-processor/index.ts
+- [ ] T016 [US1] Implement column mapping utilities in src/utils/column-mapper.ts (depends on T014, T015)
+- [ ] T017 [US1] Implement data validation service in src/services/validation.ts
+- [ ] T018 [US1] Add user feedback for upload errors and progress indication
+- [ ] T019 [US1] Add performance logging for CSV processing compliance (3s limit)
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 

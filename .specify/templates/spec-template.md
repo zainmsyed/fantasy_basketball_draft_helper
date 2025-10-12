@@ -84,21 +84,27 @@
 
 ### Functional Requirements
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+### Functional Requirements
+
+- **FR-001**: System MUST parse CSV files with flexible column mapping for player rankings and projections
+- **FR-002**: System MUST calculate Z-score based algorithmic rankings using 9 fantasy basketball categories  
+- **FR-003**: Users MUST be able to customize rankings by selecting categories to punt (exclude from calculations)
+- **FR-004**: System MUST track drafted players and update rankings dynamically in real-time
+- **FR-005**: System MUST persist all data locally in browser storage without external dependencies
+- **FR-006**: System MUST process and rank up to 200 players within 3 seconds
+- **FR-007**: System MUST provide team summary statistics and projections for drafted players
+- **FR-008**: System MUST integrate pre-generated historical stats with uploaded projection data
 
 *Example of marking unclear requirements:*
 
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+- **FR-009**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
+- **FR-010**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
 ### Key Entities *(include if feature involves data)*
 
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
+- **Player**: Represents a fantasy basketball player with name, team, position, stats (historical and projected), and draft status
+- **Strategy**: User-defined punt configuration specifying which categories to exclude from ranking calculations
+- **Team**: Collection of players drafted by the user with aggregated statistics and projections
 
 ## Success Criteria *(mandatory)*
 
@@ -109,7 +115,11 @@
 
 ### Measurable Outcomes
 
-- **SC-001**: [Measurable metric, e.g., "Users can complete account creation in under 2 minutes"]
-- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
-- **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
-- **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+### Measurable Outcomes
+
+- **SC-001**: Users can upload and process CSV files with 200 players in under 3 seconds
+- **SC-002**: UI interactions (filtering, sorting, marking drafted) respond in under 100ms
+- **SC-003**: Z-score ranking calculations complete in under 100ms for real-time updates
+- **SC-004**: Application bundle size remains under 1MB for fast loading
+- **SC-005**: Users can successfully complete draft tracking for entire fantasy draft session
+- **SC-006**: Punt strategy customization allows testing of multiple category combinations efficiently
