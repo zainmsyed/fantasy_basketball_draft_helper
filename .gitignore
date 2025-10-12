@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.env.*
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.pyd
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Logs
+*.log
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data pipeline outputs
+data-pipeline/data/output/
+
+# node & js locks (if any)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Terraform
+.terraform/
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# Misc
+*.tmp
+*.swp

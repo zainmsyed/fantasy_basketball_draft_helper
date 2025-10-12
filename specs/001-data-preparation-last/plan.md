@@ -1,0 +1,102 @@
+za# Implementation Plan: Data Preparation - Last Season Stats
+
+**Branch**: `001-data-preparation-last` | **Date**: October 12, 2025 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/001-data-preparation-last/spec.md`
+
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+
+## Summary
+
+Create a Python-based data pipeline to fetch NBA player statistics from the 2024-25 season using the nba_api library, process and validate the data, then output an optimized JSON file for bundling with the web application. The pipeline will focus on players from a provided CSV list (fantrax.csv) and include all 9 fantasy basketball categories plus Games Played data.
+
+## Technical Context
+
+**Language/Version**: Python 3.9+ for data pipeline; TypeScript + ES2022 for web integration  
+**Primary Dependencies**: nba_api (NBA stats), pandas (data processing), json (output), fuzzywuzzy (name matching)  
+**Data Source**: NBA API via nba_api library (https://github.com/swar/nba_api/tree/master/docs/nba_api/stats/endpoints)  
+**Season Target**: 2024-25 NBA season statistics  
+**Player Scope**: Limited to players in fantrax.csv (~194 players) rather than entire NBA roster  
+**Output Format**: Optimized JSON file (<1MB) for web application bundling  
+**Processing Requirements**: Fuzzy name matching (85% threshold), percentage stat filtering, combined season totals  
+**Validation**: JSON validation report, completeness metrics, name matching accuracy  
+**Error Handling**: Fail-fast on API unavailability with clear error messages
+
+**Operational note**: Clarification — all nba_api usage is offline and executed as part of a pre-season data pipeline. The runtime web application uses only the produced `last_year_stats.json` artifact and makes no live external API calls during user drafts.
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+- [x] **Modular Architecture**: Python script with separate modules for API fetching, data processing, validation, and output generation
+- [x] **Minimal Dependencies**: nba_api (core requirement), pandas (data processing), fuzzywuzzy (name matching) - all justified
+- [x] **Pure Functions First**: Data processing logic implemented as pure functions; API calls isolated to service layer
+- [x] **Performance-First Design**: Target <5 minutes total processing, <1MB output file, optimized data structures
+- [x] **Client-Side Data Sovereignty**: Generates static JSON file for bundling; no runtime API dependencies
+- [x] **Incremental Development**: Broken into P1 (basic data fetch), P2 (validation), P3 (optimization) deliverables
+
+**Rate limiting decision**: Use a conservative inter-request delay of 0.6 seconds (600ms) between NBA API calls with exponential backoff for retries on transient errors (aligns with sample implementation and reduces transient failures).
+
+**Post-Design Re-check**: All constitutional requirements satisfied. Modular design with clear separation of concerns, minimal justified dependencies, pure function architecture for data processing, performance targets defined, and incremental delivery planned.
+
+## Project Structure
+
+### Documentation (this feature)
+
+```
+specs/[###-feature]/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+```
+
+### Source Code (repository root)
+
+```
+# Basketball Draft Helper - Data Pipeline + Frontend
+data-pipeline/
+├── src/
+│   ├── fetch_stats.py          # Main script entry point
+│   ├── api/
+│   │   ├── nba_client.py       # NBA API wrapper and rate limiting
+│   │   └── endpoints.py        # Specific endpoint configurations
+│   ├── processors/
+│   │   ├── name_matcher.py     # Fuzzy name matching logic
+│   │   ├── stat_calculator.py  # Statistical calculations and filtering
+│   │   └── data_validator.py   # Data quality validation
+│   ├── models/
+│   │   ├── player_stats.py     # Player data model
+│   │   └── validation_report.py # Validation result model
+│   └── utils/
+│       ├── file_handler.py     # JSON I/O operations
+│       └── logger.py           # Logging configuration
+├── tests/
+│   ├── test_name_matcher.py
+│   ├── test_stat_calculator.py
+│   └── test_integration.py
+├── data/
+│   ├── input/
+│   │   └── fantrax.csv         # Player list input
+│   └── output/
+│       ├── last_year_stats.json # Final output
+│       └── validation_report.json # Quality metrics
+└── requirements.txt
+
+src/ (web app)
+├── data/
+│   └── last_year_stats.json   # Generated by pipeline
+└── [existing web app structure]
+```
+
+**Structure Decision**: Separate data-pipeline directory for Python preprocessing with clear separation from web application. Output JSON file is copied to web app's data directory for bundling.
+
+## Complexity Tracking
+
+*Fill ONLY if Constitution Check has violations that must be justified*
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
