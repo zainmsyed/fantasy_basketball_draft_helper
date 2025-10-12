@@ -3,6 +3,7 @@ import argparse
 import time
 from pathlib import Path
 from .utils.logger import setup_logging
+from argparse import Namespace
 from .utils.file_handler import FileHandler
 from .api.nba_client import NBAClient
 from .processors.stat_calculator import StatCalculator
@@ -10,7 +11,7 @@ from .processors.name_matcher import NameMatcher
 from .processors.data_validator import DataValidator
 
 
-def parse_arguments():
+def parse_arguments() -> Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--input", default="data/input/fantrax.csv")
     p.add_argument("--output", default="data/output/last_year_stats.json")
@@ -27,7 +28,7 @@ def parse_arguments():
     return p.parse_args()
 
 
-def main():
+def main() -> int:
     args = parse_arguments()
     setup_logging(args.log_level)
     fh = FileHandler()
@@ -86,9 +87,6 @@ def main():
     # Build outputs
     stats_out = {name: v for name, v in processed.items()}
 
-    # Optimize for web (prune fields, rounding, size check)
-    stats_out_optimized = sc.optimize_for_web(stats_out, keep_team=True, round_decimals=1)
-
     # For CSV players that did not match, add placeholder entries (rookies/no NBA stats)
     def placeholder_for_unmatched(csv_name):
         # use 'rookie' for team and None for numeric fields (will become JSON null)
@@ -113,6 +111,9 @@ def main():
             # keep existing processed entries if any; otherwise set placeholder
             if match.csv_name not in stats_out:
                 stats_out[match.csv_name] = placeholder_for_unmatched(match.csv_name)
+
+    # Optimize for web (prune fields, rounding, size check). Do this AFTER placeholders are added
+    stats_out_optimized = sc.optimize_for_web(stats_out, keep_team=True, round_decimals=1)
     os_output_path = args.output
     fh.write_stats_json(stats_out_optimized, os_output_path, copy_to_webapp=args.copy_to_webapp)
     size = 0

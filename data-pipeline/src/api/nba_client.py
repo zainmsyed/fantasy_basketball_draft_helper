@@ -4,6 +4,9 @@ import json
 from typing import List, Dict, Optional, Union
 from pathlib import Path
 from ..utils.exceptions import APIUnavailableError
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     from nba_api.stats.endpoints import leaguedashplayerstats
@@ -50,9 +53,9 @@ class NBAClient:
                         # Expect a JSON list of rows
                         if isinstance(data, list):
                             return data
-            except Exception:
+            except Exception as e:
                 # cache read errors should not block live fetch; fall through to live fetch
-                pass
+                logger.warning(f"Cache read failed, proceeding to live fetch: {e}")
 
         if leaguedashplayerstats is None:
             # nba_api not installed; raise APIUnavailableError with actionable message
@@ -63,7 +66,9 @@ class NBAClient:
         backoff = 1.0
         while attempt < self.max_retries:
             try:
-                time.sleep(self.rate_limit_seconds)
+                if self.rate_limit_seconds > 0:
+                    logger.debug(f"Respecting rate limit: sleeping {self.rate_limit_seconds}s before NBA API call")
+                    time.sleep(self.rate_limit_seconds)
                 resp = leaguedashplayerstats.LeagueDashPlayerStats(season=season, season_type_all_star="Regular Season", per_mode_detailed="PerGame")
                 data = resp.get_data_frames()
                 if not data:
@@ -79,14 +84,15 @@ class NBAClient:
                         with tmp_file.open("w", encoding="utf-8") as fh:
                             json.dump(rows, fh)
                         tmp_file.replace(cache_file)
-                    except Exception:
-                        # ignore cache write errors
-                        pass
+                    except Exception as e:
+                        # ignore cache write errors, but log warning
+                        logger.warning(f"Failed to write NBA API cache: {e}")
                 return rows
             except Exception as exc:
                 attempt += 1
                 if attempt >= self.max_retries:
                     raise APIUnavailableError(f"NBA API fetch failed after {attempt} attempts: {exc}")
+                logger.debug(f"NBA API call failed (attempt {attempt}/{self.max_retries}), retrying after {backoff:.1f}s: {exc}")
                 time.sleep(backoff)
                 backoff *= 2
 

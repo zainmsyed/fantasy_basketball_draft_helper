@@ -11,8 +11,8 @@ class PlayerStats:
     ast: float
     reb: float
     fg3m: float
-    fg_pct: float
-    ft_pct: float
+    fg_pct: Optional[float]
+    ft_pct: Optional[float]
     fga: float
     fta: float
     stl: float
@@ -35,9 +35,10 @@ class PlayerStats:
             "tov",
         ]):
             return False
-        if not (0.0 <= self.fg_pct <= 1.0):
+        # Percentages may be None; validate ranges only when present
+        if self.fg_pct is not None and not (0.0 <= self.fg_pct <= 1.0):
             return False
-        if not (0.0 <= self.ft_pct <= 1.0):
+        if self.ft_pct is not None and not (0.0 <= self.ft_pct <= 1.0):
             return False
         return True
 

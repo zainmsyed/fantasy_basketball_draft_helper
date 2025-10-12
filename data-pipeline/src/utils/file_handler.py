@@ -5,6 +5,9 @@ from pathlib import Path
 from ..models.player_stats import CSVPlayer
 from .exceptions import CSVParsingError
 import tempfile
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FileHandler:
@@ -59,9 +62,9 @@ class FileHandler:
                     json.dump(player_stats, tfw, ensure_ascii=False, indent=2)
                     tmpw = tfw.name
                 Path(tmpw).replace(web_dest)
-            except Exception:
-                # Do not fail the pipeline if web-copy fails; log or re-raise higher up if desired
-                pass
+            except Exception as e:
+                # Do not fail the pipeline if web-copy fails; log for operator visibility
+                logger.warning(f"Failed to copy stats JSON to web app at {web_dest}: {e}")
 
         return size
 
