@@ -8,16 +8,17 @@
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
+  IMPORTANT: User stories MUST follow Incremental Development principle (Constitution VI).
+  Each user story/journey must be INDEPENDENTLY DELIVERABLE within 1-2 days of development
+  and provide immediate user value. Stories must be sized for progressive enhancement.
   
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
+  - Developed independently in 1-2 days
   - Tested independently
   - Deployed independently
   - Demonstrated to users independently
+  - Enhanced progressively in future iterations
 -->
 
 ### User Story 1 - [Brief Title] (Priority: P1)

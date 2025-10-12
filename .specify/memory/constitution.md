@@ -1,10 +1,10 @@
 <!--
 Sync Impact Report:
-Version change: 0.0.0 → 1.0.0
-Modified principles: N/A (initial creation)
-Added sections: All core principles and governance
+Version change: 1.0.0 → 1.1.0
+Modified principles: N/A
+Added sections: VI. Incremental Development principle
 Removed sections: N/A
-Templates requiring updates: ✅ All templates reviewed for consistency
+Templates requiring updates: ✅ plan-template.md, spec-template.md, tasks-template.md updated
 Follow-up TODOs: None
 -->
 
@@ -36,6 +36,11 @@ All user interactions MUST respond within 100ms. CSV processing MUST complete wi
 All data processing MUST occur client-side. No external API dependencies for core functionality during drafts. User data MUST remain in browser local storage. Offline functionality MUST be preserved for critical features.
 
 **Rationale**: Draft situations require reliability and privacy. Users must maintain full control over their data without external service dependencies.
+
+### VI. Incremental Development (NON-NEGOTIABLE)
+Features MUST be broken into small, independently deliverable increments. Each increment MUST provide user value within 1-2 days of development. Features MUST be designed for progressive enhancement, allowing early deployment of basic functionality. No feature development cycles longer than one week.
+
+**Rationale**: Small, digestible features enable rapid feedback, reduce risk, allow early validation of user needs, and maintain development momentum through frequent wins.
 
 ## Development Standards
 
@@ -90,4 +95,4 @@ All pull requests MUST verify compliance with these principles. Architecture dec
 ### Exception Handling
 Exceptions to these principles MUST be documented with specific justification, time-bound approval, and remediation plan. Emergency fixes MAY bypass non-critical principles but MUST include follow-up tasks for compliance restoration.
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-12
+**Version**: 1.1.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-12

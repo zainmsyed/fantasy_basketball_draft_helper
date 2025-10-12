@@ -9,11 +9,12 @@ description: "Task list template for feature implementation"
 
 **Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story. Tasks MUST be sized for 1-2 day completion per Incremental Development principle (Constitution VI).
 
 ## Format: `[ID] [P?] [Story] Description`
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- **Size Limit**: Each task MUST be completable within 1-2 days (Constitution VI)
 - Include exact file paths in descriptions
 
 ## Path Conventions
@@ -209,6 +210,12 @@ Task: "Create [Entity2] model in src/models/[entity2].py"
 ---
 
 ## Implementation Strategy
+
+### Incremental Development (Constitution VI Compliance)
+
+**Daily Deliverable Rule**: Each task MUST provide demonstrable user value within 1-2 days
+**Progressive Enhancement**: Start with minimal working version, enhance iteratively
+**Early Validation**: Deploy/demo basic functionality before adding complexity
 
 ### MVP First (User Story 1 Only)
 
