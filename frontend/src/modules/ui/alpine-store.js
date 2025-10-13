@@ -23,7 +23,12 @@ export function createDraftHelperStore() {
           this.searchQuery = saved.searchQuery || ''
           this.positionFilters = saved.positionFilter || []
         }
-        await this.loadData()
+        this.loading = true
+        try {
+          await this.loadData()
+        } finally {
+          this.loading = false
+        }
         this.initializeTable()
         // apply filters initially (restore state)
         this.applyFilters()
@@ -36,6 +41,12 @@ export function createDraftHelperStore() {
     async loadData() {
       const bundle = await loadSampleData(this.activeStatView)
       this.allPlayers = bundle.players || []
+      if (!this.allPlayers || this.allPlayers.length === 0) {
+        // Inform user that the selected stat view has no data
+        console.warn('Loaded stat view has no players:', this.activeStatView)
+        // Use a friendly alert for now; can be replaced with a nicer UI message
+        alert(`No data available for ${this.activeStatView}`)
+      }
       // precompute fields for performance
       for (const p of this.allPlayers) {
         p._name_lc = (p.name || '').toLowerCase()

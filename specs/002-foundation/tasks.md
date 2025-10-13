@@ -147,9 +147,11 @@
 - [x] T031 [P] [US3] Implement data view switching logic in Alpine.js store to load alternate dataset
 - [x] T032 [US3] Create stat view change handler that preserves current search/filter state during data switching
 - [x] T033 [US3] Update Tabulator table data without losing sort state when switching between stat views
-- [ ] T034 [US3] Implement visual loading indicators during stat view transitions
+- [x] T034 [US3] Implement visual loading indicators during stat view transitions
+    - Implemented: small spinner next to the Stats View select and a table-overlay loading indicator while data is loading.
 - [x] T035 [US3] Add stat view preference persistence to localStorage with graceful fallback
-- [ ] T036 [US3] Add validation for projected stats data availability with user-friendly messaging
+- [x] T036 [US3] Add validation for projected stats data availability with user-friendly messaging
+    - Implemented: app now warns (alert) when selected stat view returns no players; logged warning for debugging.
 - [ ] T037 [US3] Validate <100ms response times for stat view toggle operations
 
 **Checkpoint**: User Story 3 complete - all three stories work independently and together
