@@ -19,10 +19,10 @@
 
 **Purpose**: Project initialization and dependency installation
 
-- [ ] T001 Install new NPM dependencies: `npm install papaparse fuse.js uuid` in frontend/
-- [ ] T002 [P] Create module directory structure: `frontend/src/modules/data/` and `frontend/src/modules/ui/`
-- [ ] T003 [P] Create utilities directory: `frontend/src/utils/` for shared helper functions
-- [ ] T004 [P] Create test fixtures directory: `frontend/tests/fixtures/` with sample CSV files
+- [x] T001 Install new NPM dependencies: `npm install papaparse fuse.js uuid` in frontend/
+- [x] T002 [P] Create module directory structure: `frontend/src/modules/data/` and `frontend/src/modules/ui/`
+- [x] T003 [P] Create utilities directory: `frontend/src/utils/` for shared helper functions
+- [x] T004 [P] Create test fixtures directory: `frontend/tests/fixtures/` with sample CSV files
 
 **Checkpoint**: Project structure ready for module development
 
@@ -34,12 +34,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Create TypeScript type definitions in `frontend/src/types/player.d.ts` for: UploadedPlayer, HistoricalStats, IntegratedPlayer, ColumnMapping, ValidationReport, DataQualityFlag, ValidationIssue
-- [ ] T006 [P] Implement string normalization utilities in `frontend/src/utils/string-utils.js`: normalizeName() using Unicode NFD normalization for accent removal (é→e, ć→c), case handling (toLowerCase), whitespace trimming and collapsing
-- [ ] T007 [P] Implement storage utilities in `frontend/src/utils/storage.js`: saveColumnMapping(), loadColumnMapping(), checkStorageQuota(), saveIntegratedPlayers()
-- [ ] T008 [P] Implement validation rule functions in `frontend/src/utils/validators.js`: isValidPosition(), isValidPercentage(), countNonNullStats() (pure functions)
-- [ ] T009 Load historical stats JSON on app initialization: fetch `frontend/public/data/last_year_stats.json` and cache in Alpine.js store; implement retry logic (3 attempts) and display critical error to user if fetch fails after all retries
-- [ ] T010 Create error message constants in `frontend/src/config/constants.js`: ERROR_MESSAGES map, PERFORMANCE_TARGETS, VALIDATION_THRESHOLDS
+- [x] T005 Create TypeScript type definitions in `frontend/src/types/player.d.ts` for: UploadedPlayer, HistoricalStats, IntegratedPlayer, ColumnMapping, ValidationReport, DataQualityFlag, ValidationIssue
+- [x] T006 [P] Implement string normalization utilities in `frontend/src/utils/string-utils.js`: normalizeName() using Unicode NFD normalization for accent removal (é→e, ć→c), case handling (toLowerCase), whitespace trimming and collapsing
+- [x] T007 [P] Implement storage utilities in `frontend/src/utils/storage.js`: saveColumnMapping(), loadColumnMapping(), checkStorageQuota(), saveIntegratedPlayers()
+- [x] T008 [P] Implement validation rule functions in `frontend/src/utils/validators.js`: isValidPosition(), isValidPercentage(), countNonNullStats() (pure functions)
+ - [x] T009 Load historical stats JSON on app initialization: fetch `frontend/public/data/last_year_stats.json` and cache in Alpine.js store; implement retry logic (3 attempts) and display critical error to user if fetch fails after all retries
+- [x] T010 Create error message constants in `frontend/src/config/constants.js`: ERROR_MESSAGES map, PERFORMANCE_TARGETS, VALIDATION_THRESHOLDS
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -53,13 +53,19 @@
 
 ### Implementation for User Story 1
 
-- [ ] T011 [P] [US1] Implement CSV parser module in `frontend/src/modules/data/csv-parser.js`: parseCSV() function using PapaParse with header detection, dynamic typing, error handling
-- [ ] T012 [US1] Add file input UI component to `frontend/index.html`: file input with "Upload CSV" button, accept=".csv" attribute, styled with DaisyUI
-- [ ] T013 [US1] Create upload handler in Alpine.js component: trigger parseCSV() on file selection, handle loading state
-- [ ] T014 [US1] Implement data preview UI in `frontend/index.html`: table showing first 10 rows, column headers, row count display
-- [ ] T015 [US1] Add error handling for invalid files: detect non-CSV files, show user-friendly error messages, handle malformed CSV with specific row numbers
-- [ ] T016 [US1] Add file size validation: check file size <5MB, warn if >500 players detected, display file info (name, size, row count)
-- [ ] T017 [US1] Performance validation: log CSV parsing time, ensure <3s for 200 players, add console warnings if threshold exceeded
+ - [x] T011 [P] [US1] Implement CSV parser module in `frontend/src/modules/data/csv-parser.js`: parseCSV() function using PapaParse with header detection, dynamic typing, error handling
+ - [x] T012 [US1] Add file input UI component to `frontend/index.html`: file input with "Upload CSV" button, accept=".csv" attribute, styled with DaisyUI
+ - [x] T013 [US1] Create upload handler in Alpine.js component: trigger parseCSV() on file selection, handle loading state
+ - [x] T014 [US1] Implement data preview UI in `frontend/index.html`: table showing first 10 rows, column headers, row count display
+ - [x] T015 [US1] Add error handling for invalid files: detect non-CSV files, show user-friendly error messages, handle malformed CSV with specific row numbers
+ - [x] T016 [US1] Add file size validation: check file size <5MB, warn if >500 players detected, display file info (name, size, row count)
+ - [x] T017 [US1] Performance validation: log CSV parsing time, ensure <3s for 200 players, add console warnings if threshold exceeded
+ - [x] T012 [US1] Add file input UI component to `frontend/index.html`: file input with "Upload CSV" button, accept=".csv" attribute, styled with DaisyUI
+ - [x] T013 [US1] Create upload handler in Alpine.js component: trigger parseCSV() on file selection, handle loading state
+ - [x] T014 [US1] Implement data preview UI in `frontend/index.html`: table showing first 10 rows, column headers, row count display
+ - [x] T015 [US1] Add error handling for invalid files: detect non-CSV files, show user-friendly error messages, handle malformed CSV with specific row numbers
+ - [x] T016 [US1] Add file size validation: check file size <5MB, warn if >500 players detected, display file info (name, size, row count)
+ - [x] T017 [US1] Performance validation: log CSV parsing time, ensure <3s for 200 players, add console warnings if threshold exceeded
 
 **Checkpoint**: At this point, users can upload CSV files and see data preview - US1 is fully functional and testable independently
 
@@ -73,14 +79,17 @@
 
 ### Implementation for User Story 2
 
-- [ ] T018 [P] [US2] Implement column auto-detection logic in `frontend/src/modules/data/csv-parser.js`: autoDetectMapping() function with pattern matching for common column names (player, name, pts, ast, etc.)
-- [ ] T019 [P] [US2] Create Alpine.js column mapper component in `frontend/src/modules/ui/column-mapper.js`: reactive data for csvColumns, mapping state, isComplete computed property
-- [ ] T020 [US2] Build column mapping UI in `frontend/index.html`: dropdown selectors for each required field (13 total: name, team, position, rank, 9 stats), styled with DaisyUI
-- [ ] T021 [US2] Implement mapping persistence: loadSavedMapping() from localStorage, auto-apply if columns match exactly, save after successful upload
-- [ ] T022 [US2] Add mapping validation: check all required fields mapped, disable "Confirm" button until complete, display missing field warnings
-- [ ] T023 [US2] Implement preview update on mapping change: when user selects column, update preview table to show data under correct field names
-- [ ] T024 [US2] Add reset and manual override controls: "Reset Mapping" button, manual edit option for auto-detected mappings
-- [ ] T025 [US2] Create UploadedPlayer entities: transform mapped CSV rows into UploadedPlayer objects with projectedStats, handle percentage normalization (54 → 0.54)
+ - [x] T018 [P] [US2] Implement column auto-detection logic in `frontend/src/modules/data/csv-parser.js`: autoDetectMapping() function with pattern matching for common column names (player, name, pts, ast, etc.)
+ - [x] T019 [P] [US2] Create Alpine.js column mapper component in `frontend/src/modules/ui/column-mapper.js`: reactive data for csvColumns, mapping state, isComplete computed property
+ - [x] T020 [US2] Build column mapping UI in `frontend/index.html`: dropdown selectors for each required field (13 total: name, team, position, rank, 9 stats), styled with DaisyUI
+ - [x] T020 [US2] Build column mapping UI in `frontend/index.html`: dropdown selectors for each required field (13 total: name, team, position, rank, 9 stats), styled with DaisyUI
+ - [x] T021 [US2] Implement mapping persistence: loadSavedMapping() from localStorage, auto-apply if columns match exactly, save after successful upload
+ - [x] T022 [US2] Add mapping validation: check all required fields mapped, disable "Confirm" button until complete, display missing field warnings
+- [x] T023 [US2] Implement preview update on mapping change: when user selects column, update preview table to show data under correct field names
+ - [x] T023 [US2] Implement preview update on mapping change: when user selects column, update preview table to show data under correct field names
+- [x] T024 [US2] Add reset and manual override controls: "Reset Mapping" button, manual edit option for auto-detected mappings
+ - [x] T024 [US2] Add reset and manual override controls: "Reset Mapping" button, manual edit option for auto-detected mappings
+ - [x] T025 [US2] Create UploadedPlayer entities: transform mapped CSV rows into UploadedPlayer objects with projectedStats, handle percentage normalization (54 → 0.54)
 
 **Checkpoint**: At this point, users can map columns and see correctly structured data - US1 AND US2 both work independently
 
@@ -93,15 +102,23 @@
 **Independent Test**: Upload CSV, observe automatic matching, verify matched players show historical stats, unmatched show indicators
 
 ### Implementation for User Story 3
-
-- [ ] T026 [P] [US3] Implement name matching algorithm in `frontend/src/modules/data/name-matcher.js`: matchPlayers() function using Fuse.js with 85% threshold, exact match first, fuzzy fallback
-- [ ] T027 [US3] Implement team-based disambiguation: when multiple high-confidence matches, use team as secondary criterion, handle duplicate player names
-- [ ] T028 [P] [US3] Implement data merger in `frontend/src/modules/data/data-merger.js`: mergePlayerData() combines UploadedPlayer + HistoricalStats → IntegratedPlayer, generate UUIDs
-- [ ] T029 [US3] Add matching process to upload workflow: after column mapping confirmed, run name matching, show progress indicator during processing
-- [ ] T030 [US3] Display match results: show match rate summary ("X/Y players matched"), add visual indicators for matched vs unmatched players, display match confidence percentages
-- [ ] T031 [US3] Handle unmatched players: set hasHistoricalData=false, display "No historical data" badge, include in player table with projections only
-- [ ] T032 [US3] Implement manual match override UI for low-confidence matches: show inline edit controls when confidence <90%, dropdown of alternative matches, confirm/cancel actions
-- [ ] T033 [US3] Performance validation: ensure name matching completes <1s for 200 players, log timing, display in console
+npm test --silent
+ - [x] T026 [P] [US3] Implement name matching algorithm in `frontend/src/modules/data/name-matcher.js`: matchPlayers() function using Fuse.js with 85% threshold, exact match first, fuzzy fallback
+- [x] T027 [US3] Implement team-based disambiguation: when multiple high-confidence matches, use team as secondary criterion, handle duplicate player names
+ - [x] T027 [US3] Implement team-based disambiguation: when multiple high-confidence matches, use team as secondary criterion, handle duplicate player names
+- [x] T028 [P] [US3] Implement data merger in `frontend/src/modules/data/data-merger.js`: mergePlayerData() combines UploadedPlayer + HistoricalStats → IntegratedPlayer, generate UUIDs
+ - [x] T028 [P] [US3] Implement data merger in `frontend/src/modules/data/data-merger.js`: mergePlayerData() combines UploadedPlayer + HistoricalStats → IntegratedPlayer, generate UUIDs
+ - [x] T029 [US3] Add matching process to upload workflow: after column mapping confirmed, run name matching, show progress indicator during processing
+ - [x] T030 [US3] Display match results: show match rate summary ("X/Y players matched"), add visual indicators for matched vs unmatched players, display match confidence percentages
+ - [x] T031 [US3] Handle unmatched players: set hasHistoricalData=false, display "No historical data" badge, include in player table with projections only
+ - [x] T028 [P] [US3] Implement data merger in `frontend/src/modules/data/data-merger.js`: mergePlayerData() combines UploadedPlayer + HistoricalStats → IntegratedPlayer, generate UUIDs
+ - [x] T029 [US3] Add matching process to upload workflow: after column mapping confirmed, run name matching, show progress indicator during processing
+ - [x] T030 [US3] Display match results: show match rate summary ("X/Y players matched"), add visual indicators for matched vs unmatched players, display match confidence percentages
+ - [x] T031 [US3] Handle unmatched players: set hasHistoricalData=false, display "No historical data" badge, include in player table with projections only
+- [x] T032 [US3] Implement manual match override UI for low-confidence matches: show inline edit controls when confidence <90%, dropdown of alternative matches, confirm/cancel actions
+ - [x] T032 [US3] Implement manual match override UI for low-confidence matches: show inline edit controls when confidence <90%, dropdown of alternative matches, confirm/cancel actions
+- [x] T033 [US3] Performance validation: ensure name matching completes <1s for 200 players, log timing, display in console
+ - [x] T033 [US3] Performance validation: ensure name matching completes <1s for 200 players, log timing, display in console
 
 **Checkpoint**: At this point, players are matched to historical data - US1, US2, AND US3 all work independently
 
@@ -115,15 +132,15 @@
 
 ### Implementation for User Story 4
 
-- [ ] T034 [P] [US4] Implement data validator module in `frontend/src/modules/data/data-validator.js`: validatePlayers() function, validateSinglePlayer() for manual overrides
-- [ ] T035 [US4] Implement three-tier validation rules: Error (missing name/position), Warning (missing >3 stats, low confidence), Info (threshold failures, position mismatch)
-- [ ] T036 [P] [US4] Create Alpine.js validation reporter component in `frontend/src/modules/ui/validation-reporter.js`: reactive state for report, filterSeverity, hasErrors computed properties
-- [ ] T037 [US4] Build validation reporter UI in `frontend/index.html`: severity banners (red/yellow/blue), expandable details section, player issue list with tooltips
-- [ ] T038 [US4] Add validation to upload workflow: run after data merging, generate ValidationReport, display before final confirmation
-- [ ] T039 [US4] Implement error blocking: disable "Confirm Upload" button if errors exist, show blocking message
-- [ ] T040 [US4] Implement warning confirmation dialog: show modal for warnings, "Proceed anyway" button, list all warning issues
-- [ ] T041 [US4] Add info-level indicators: display blue badges for threshold failures, position mismatches, dismissible info messages
-- [ ] T042 [US4] Add filter controls: filter players by validation severity, show only problematic players option
+ - [x] T034 [P] [US4] Implement data validator module in `frontend/src/modules/data/data-validator.js`: validatePlayers() function, validateSinglePlayer() for manual overrides
+ - [x] T035 [US4] Implement three-tier validation rules: Error (missing name/position), Warning (missing >3 stats, low confidence), Info (threshold failures, position mismatch)
+ - [x] T036 [P] [US4] Create Alpine.js validation reporter component in `frontend/src/modules/ui/validation-reporter.js`: reactive state for report, filterSeverity, hasErrors computed properties
+ - [x] T037 [US4] Build validation reporter UI in `frontend/index.html`: severity banners (red/yellow/blue), expandable details section, player issue list with tooltips
+ - [x] T038 [US4] Add validation to upload workflow: run after data merging, generate ValidationReport, display before final confirmation
+ - [x] T039 [US4] Implement error blocking: disable "Confirm Upload" button if errors exist, show blocking message
+ - [x] T040 [US4] Implement warning confirmation dialog: show modal for warnings, "Proceed anyway" button, list all warning issues
+ - [x] T041 [US4] Add info-level indicators: display blue badges for threshold failures, position mismatches, dismissible info messages
+ - [x] T042 [US4] Add filter controls: filter players by validation severity, show only problematic players option
 
 **Checkpoint**: At this point, data validation is complete - US1, US2, US3, AND US4 all work independently
 

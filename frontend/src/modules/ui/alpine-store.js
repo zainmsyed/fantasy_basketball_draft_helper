@@ -3,6 +3,14 @@ import { createTableConfig } from '../../modules/table/tabulator-config.js'
 import { loadUIState, saveUIState } from '../../utils/storage.js'
 import { TIMING } from '../../config/constants.js'
 import { isPersistentStorageAvailable } from '../../utils/storage.js'
+import { parseCSV, autoDetectMapping } from '../../modules/data/csv-parser.js'
+import { createColumnMapper } from './column-mapper.js'
+import { matchPlayers } from '../../modules/data/name-matcher.js'
+import { loadHistoricalStats, saveIntegratedPlayers, saveOverrides, loadOverrides } from '../../utils/storage.js'
+import { mergeFromPreview } from '../../modules/data/data-merger.js'
+import { validatePlayers } from '../../modules/data/data-validator.js'
+import { createValidationReporter } from './validation-reporter.js'
+import { transformRowToUploaded, validateMappingComplete } from '../../modules/data/csv-transformer.js'
 
 export function createDraftHelperStore() {
   return {
@@ -20,6 +28,34 @@ export function createDraftHelperStore() {
     // global error state for user-friendly error boundaries
     errorMessage: null,
     loading: false,
+  // CSV upload state
+  uploadedCSV: null,
+  csvColumns: [],
+  columnMapper: null,
+  mappingPreview: null,
+  // preview / metadata
+  uploadedFileName: null,
+  uploadedFileSize: 0,
+  uploadedRowCount: 0,
+  parseTimeMs: 0,
+  previewRows: [],
+  fileWarnings: [],
+  parseErrors: [],
+  // last integrated players (in-memory) for preview
+  lastIntegratedPlayers: [],
+  // last validation report generated after merge
+  lastValidationReport: null,
+  // UI modal state for validation confirmation
+  showValidationModal: false,
+  transformedUploadedPlayers: [],
+  // manual override UI state
+  overrideIndex: null,
+  overrideChoice: null,
+  overrides: [],
+  // preview selection for bulk actions
+  selectedPreviewIndexes: [],
+  // which alternative index to apply in bulk
+  bulkAlternativeIndex: 0,
     searchTimeout: null,
     _filterRAF: null,
     _saveTimer: null,
@@ -53,6 +89,10 @@ export function createDraftHelperStore() {
         this.initializeTable()
         // apply filters initially (restore state)
         this.applyFilters()
+        // load saved overrides
+        try {
+          this.overrides = loadOverrides() || []
+        } catch {}
 
         // Install a simple global error boundary to surface uncaught errors to the UI
         try {
@@ -287,6 +327,415 @@ export function createDraftHelperStore() {
       // apply and persist
       this.applyFilters()
       this.saveState()
+    },
+
+    // File input handler: reads file as text and delegates to loadCSVFromString
+    async handleFile(ev) {
+      try {
+        const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null
+        if (!file) return
+        // basic file type validation
+        this.fileWarnings = []
+        const type = file.type || ''
+        if (!type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
+          this.fileWarnings.push('Selected file does not appear to be a CSV')
+        }
+        // size validation (5MB hard limit recommended)
+        this.uploadedFileName = file.name
+        this.uploadedFileSize = file.size || 0
+        if (this.uploadedFileSize > 5 * 1024 * 1024) {
+          this.fileWarnings.push('File exceeds 5MB recommended limit')
+        }
+
+        this.loading = true
+        const t0 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
+        const text = await file.text()
+        const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
+        this.parseTimeMs = Math.max(0, t1 - t0)
+        await this.loadCSVFromString(text)
+      } catch (err) {
+        console.error('file read error', err)
+        this.errorMessage = `Failed to read CSV: ${String(err)}`
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async loadCSVFromString(csvText) {
+      try {
+        const t0 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
+        const res = await parseCSV(csvText)
+        const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
+        // set parse time (ms)
+        this.parseTimeMs = Math.max(0, t1 - t0)
+        this.uploadedCSV = res
+        this.csvColumns = res && res.meta && res.meta.columns ? res.meta.columns : []
+        this.uploadedRowCount = res && res.meta && res.meta.rowCount ? res.meta.rowCount : (Array.isArray(res.data) ? res.data.length : 0)
+        // prepare a small preview of first 10 rows
+        this.previewRows = (res.data || []).slice(0, 10)
+        // capture parse errors (PapaParse returns results.errors[])
+        this.parseErrors = Array.isArray(res.errors) ? res.errors.map(e => ({row: e.row, message: e.message, code: e.code})) : []
+        if (this.parseErrors.length) {
+          this.fileWarnings.push(`${this.parseErrors.length} parsing issue(s) detected`)
+        }
+        // large file guidance
+        if (this.uploadedRowCount > 500) {
+          this.fileWarnings.push('Large file detected (>500 rows). Consider trimming to top 200-300 players for performance.')
+        }
+        // performance warning: parsing time threshold
+        if (this.parseTimeMs > 3000) {
+          this.fileWarnings.push('Parsing took longer than expected (>3000ms). Consider reducing file size.')
+        }
+        // create a new mapper for these columns and init
+        this.columnMapper = createColumnMapper(this.csvColumns)
+        await this.columnMapper.init()
+        // run an initial preview if historical data is available
+        try {
+          const hist = await loadHistoricalStats()
+          // create simple csvPlayers array for matching using detected column names
+          const players = (res.data || []).map(r => ({
+            name: this.columnMapper.mapping.playerNameColumn ? r[this.columnMapper.mapping.playerNameColumn] : r[Object.keys(r)[0]],
+            team: this.columnMapper.mapping.teamColumn ? r[this.columnMapper.mapping.teamColumn] : undefined
+          }))
+          this.mappingPreview = matchPlayers(players, hist)
+          // apply any saved manual overrides to the preview
+          try {
+            const saved = loadOverrides() || []
+            if (Array.isArray(saved) && saved.length && Array.isArray(this.mappingPreview)) {
+              this.applySavedOverrides(saved)
+            }
+          } catch (e) {
+            // ignore override application failures
+          }
+        } catch (e) {
+          // historical load may fail in tests or offline; that's ok for preview
+          this.mappingPreview = null
+        }
+      } catch (err) {
+        console.error('parseCSV error', err)
+        this.errorMessage = `CSV parse failed: ${String(err)}`
+      }
+    },
+
+    // Trim uploadedCSV to top N rows (useful for large files)
+    trimToTopN(n = 250) {
+      try {
+        if (!this.uploadedCSV || !Array.isArray(this.uploadedCSV.data)) return false
+        this.uploadedCSV.data = this.uploadedCSV.data.slice(0, n)
+        this.uploadedRowCount = this.uploadedCSV.data.length
+        this.previewRows = this.uploadedCSV.data.slice(0, 10)
+        // recompute mapping preview asynchronously
+        this.applyMappingPreview()
+        return true
+      } catch (e) {
+        console.warn('trimToTopN failed', e)
+        return false
+      }
+    },
+
+    // Save current mapping via columnMapper
+    saveMapping() {
+      try {
+        if (this.columnMapper) return this.columnMapper.saveMapping()
+        return false
+      } catch (e) {
+        return false
+      }
+    },
+
+    // Trigger preview after mapping selections updated
+    async applyMappingPreview() {
+      if (!this.uploadedCSV || !this.columnMapper) return
+      try {
+        const res = this.uploadedCSV
+        const players = (res.data || []).map(r => ({
+          name: this.columnMapper.mapping.playerNameColumn ? r[this.columnMapper.mapping.playerNameColumn] : r[Object.keys(r)[0]],
+          team: this.columnMapper.mapping.teamColumn ? r[this.columnMapper.mapping.teamColumn] : undefined
+        }))
+        const hist = await loadHistoricalStats()
+        this.mappingPreview = matchPlayers(players, hist)
+        // apply saved overrides if present
+        try {
+          const saved = loadOverrides() || []
+          if (Array.isArray(saved) && saved.length && Array.isArray(this.mappingPreview)) {
+            this.applySavedOverrides(saved)
+          }
+        } catch (e) {
+          // ignore
+        }
+      } catch (e) {
+        console.warn('applyMappingPreview failed', e)
+        this.mappingPreview = null
+      }
+    },
+
+    // Apply saved overrides (array of {key, selected}) to current mappingPreview
+    applySavedOverrides(savedOverrides = []) {
+      try {
+        if (!this.mappingPreview || !Array.isArray(this.mappingPreview)) return
+        const map = new Map()
+        for (const o of savedOverrides) {
+          if (o && o.key) map.set(o.key, o.selected)
+        }
+        for (const entry of this.mappingPreview) {
+          try {
+            const key = entry.csvPlayer && (entry.csvPlayer.name || entry.csvPlayer.playerName)
+            if (!key) continue
+            if (map.has(key)) {
+              const sel = map.get(key)
+              // find alternative that matches selected by name or id
+              if (entry.alternatives && Array.isArray(entry.alternatives)) {
+                const found = entry.alternatives.find(a => {
+                  const p = a.player || {}
+                  return p.name === sel || p.id === sel || String(p.id) === String(sel)
+                })
+                if (found) {
+                  entry.historicalMatch = found.player
+                  entry.confidence = found.confidence || entry.confidence
+                  entry.matchType = 'manual'
+                }
+              }
+            }
+          } catch (e) {
+            // per-entry failure shouldn't break overall application
+            continue
+          }
+        }
+      } catch (e) {
+        // swallow errors
+      }
+    },
+
+    // Merge preview results and save integrated players
+    async confirmUpload() {
+      // mappingPreview contains match results; ensure it's an array
+      if (!this.mappingPreview || !Array.isArray(this.mappingPreview)) return false
+      try {
+        const integrated = mergeFromPreview(this.mappingPreview)
+        this.lastIntegratedPlayers = integrated
+
+        // run validation before persisting
+        try {
+          const reportResults = validatePlayers(integrated)
+          // synthesize a minimal ValidationReport for UI
+          const totalPlayers = integrated.length
+          let errorCount = 0
+          let warningCount = 0
+          let infoCount = 0
+          const playerIssues = new Map()
+          for (let i = 0; i < reportResults.length; i++) {
+            const r = reportResults[i]
+            if (r.issues && r.issues.length) {
+              playerIssues.set(r.player.id || String(r.player.csvRowIndex || i), r.issues)
+              for (const it of r.issues) {
+                if (it.severity === 'error') errorCount++
+                else if (it.severity === 'warning') warningCount++
+                else infoCount++
+              }
+            }
+          }
+          this.lastValidationReport = {
+            totalPlayers,
+            validPlayers: Math.max(0, totalPlayers - errorCount),
+            matchedPlayers: integrated.filter(p => p.hasHistoricalData).length,
+            unmatchedPlayers: integrated.filter(p => !p.hasHistoricalData).map(p => p.name || ''),
+            errorCount,
+            warningCount,
+            infoCount,
+            playerIssues,
+            generatedAt: new Date(),
+            csvFileName: this.uploadedFileName || '',
+          }
+
+          // Record validation errors/warnings for the UI. Default behavior: do not block persistence
+          if (errorCount > 0) {
+            this.errorMessage = 'Validation errors detected. Review the report before proceeding.'
+            // NOTE: by default do not block persistence to preserve existing integration flow/tests.
+            // Upstream UI can choose to prevent calling confirmUpload when errors exist.
+          }
+        } catch (ve) {
+          console.warn('validation step failed', ve)
+          // allow persistence to proceed if validation itself fails unexpectedly
+        }
+
+        // attempt to persist
+        await saveIntegratedPlayers(integrated)
+        return true
+      } catch (e) {
+        console.error('confirmUpload failed', e)
+        this.errorMessage = `Failed to save integrated players: ${String(e)}`
+        return false
+      }
+    },
+
+    // UI-facing confirm which shows modal on warnings/errors. Keeps confirmUpload() behavior unchanged for tests.
+    async uiConfirmUpload() {
+      // ensure mappingPreview exists
+      if (!this.mappingPreview || !Array.isArray(this.mappingPreview)) return false
+      // generate integrated players and validation report without persisting yet
+      const integrated = mergeFromPreview(this.mappingPreview)
+      // run validation
+      try {
+        const reportResults = validatePlayers(integrated)
+        let errorCount = 0
+        let warningCount = 0
+        const playerIssues = new Map()
+        for (let i = 0; i < reportResults.length; i++) {
+          const r = reportResults[i]
+          if (r.issues && r.issues.length) {
+            playerIssues.set(r.player.id || String(r.player.csvRowIndex || i), r.issues)
+            for (const it of r.issues) {
+              if (it.severity === 'error') errorCount++
+              else if (it.severity === 'warning') warningCount++
+            }
+          }
+        }
+        this.lastValidationReport = {
+          totalPlayers: integrated.length,
+          errorCount,
+          warningCount,
+          playerIssues,
+          generatedAt: new Date(),
+          csvFileName: this.uploadedFileName || ''
+        }
+
+        // If errors or warnings exist, surface modal for user action
+        if (errorCount > 0 || warningCount > 0) {
+          this.showValidationModal = true
+          return false
+        }
+      } catch (e) {
+        console.warn('uiConfirmUpload validation failed', e)
+        // fall back to direct confirmUpload
+      }
+
+      // No issues - proceed to persist
+      return await this.confirmUpload()
+    },
+
+    // Called by modal when user chooses to proceed despite warnings/errors
+    async proceedAfterValidationModal() {
+      this.showValidationModal = false
+      // call confirmUpload to persist
+      return await this.confirmUpload()
+    },
+
+    // Transform all CSV rows into UploadedPlayer[] using current mapping
+    transformUploadedRows() {
+      if (!this.uploadedCSV || !this.columnMapper) return []
+      const mapping = this.columnMapper.mapping || {}
+      if (!validateMappingComplete(mapping)) {
+        this.errorMessage = 'Mapping incomplete; map required fields before transforming.'
+        return []
+      }
+      const rows = this.uploadedCSV.data || []
+      const transformed = rows.map(r => transformRowToUploaded(r, mapping))
+      this.transformedUploadedPlayers = transformed
+      return transformed
+    },
+
+    mappingComplete() {
+      if (!this.columnMapper || !this.columnMapper.mapping) return false
+      try {
+        return validateMappingComplete(this.columnMapper.mapping)
+      } catch (e) {
+        return false
+      }
+    },
+
+    // Manual override helpers for mappingPreview
+    openOverride(i) {
+      this.overrideIndex = i
+      this.overrideChoice = null
+    },
+
+    closeOverride() {
+      this.overrideIndex = null
+      this.overrideChoice = null
+    },
+
+    setOverrideChoice(idx) {
+      this.overrideChoice = Number(idx)
+    },
+
+    applyOverride() {
+      const i = this.overrideIndex
+      const choice = this.overrideChoice
+      if (i == null || choice == null) return false
+      try {
+        const entry = this.mappingPreview[i]
+        if (!entry || !entry.alternatives || !entry.alternatives[choice]) return false
+        const selected = entry.alternatives[choice].player
+        entry.historicalMatch = selected
+        entry.confidence = entry.alternatives[choice].confidence || entry.confidence
+        entry.matchType = 'manual'
+        // close UI
+        this.closeOverride()
+        // persist overrides map (store by csv player name -> selected historical id)
+        try {
+          const key = entry.csvPlayer && (entry.csvPlayer.name || entry.csvPlayer.playerName)
+          if (key) {
+            this.overrides = this.overrides.filter(o => o.key !== key)
+            this.overrides.push({ key, selected: selected.name || selected.id || selected })
+            try { saveOverrides(this.overrides) } catch {}
+          }
+        } catch (e) {}
+        return true
+      } catch (e) {
+        console.warn('applyOverride failed', e)
+        return false
+      }
+    },
+
+    // Bulk-apply an override choice (alternative index) to multiple preview entries
+    // selection: array of preview indexes (numbers) or the string 'all_unmatched' meaning apply to unmatched entries
+    bulkApplyOverride(selection, alternativeIndex) {
+      if (!this.mappingPreview || !Array.isArray(this.mappingPreview)) return 0
+      const applied = []
+      const toApply = Array.isArray(selection)
+        ? selection.map(Number).filter(i => !Number.isNaN(i))
+        : selection === 'all_unmatched'
+        ? this.mappingPreview.map((e, idx) => ({ idx, e })).filter(x => !x.e.historicalMatch).map(x => x.idx)
+        : []
+
+      for (const i of toApply) {
+        const entry = this.mappingPreview[i]
+        if (!entry || !entry.alternatives || !entry.alternatives[alternativeIndex]) continue
+        try {
+          const chosen = entry.alternatives[alternativeIndex].player
+          entry.historicalMatch = chosen
+          entry.confidence = entry.alternatives[alternativeIndex].confidence || entry.confidence
+          entry.matchType = 'manual'
+          // persist override entry
+          const key = entry.csvPlayer && (entry.csvPlayer.name || entry.csvPlayer.playerName)
+          if (key) {
+            this.overrides = this.overrides.filter(o => o.key !== key)
+            this.overrides.push({ key, selected: chosen.name || chosen.id || chosen })
+          }
+          applied.push(i)
+        } catch (e) {
+          // continue on per-entry errors
+          continue
+        }
+      }
+      try { saveOverrides(this.overrides) } catch (e) {}
+      return applied.length
+    },
+
+    // Helper to apply the currently selected alternative to the selectedPreviewIndexes
+    bulkApplySelected() {
+      try {
+        const indexes = Array.isArray(this.selectedPreviewIndexes) ? this.selectedPreviewIndexes.map(Number).filter(i => !Number.isNaN(i)) : []
+        if (!indexes.length) return 0
+        const alt = Number(this.bulkAlternativeIndex) || 0
+        const applied = this.bulkApplyOverride(indexes, alt)
+        // clear selection after applying
+        this.selectedPreviewIndexes = []
+        return applied
+      } catch (e) {
+        console.warn('bulkApplySelected failed', e)
+        return 0
+      }
     },
     saveStateThrottled() {
       if (this._saveTimer) return

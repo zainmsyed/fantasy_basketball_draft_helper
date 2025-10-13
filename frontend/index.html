@@ -12,7 +12,8 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="form-control">
             <label class="label"><span class="label-text">CSV Upload (Phase 2)</span></label>
-            <input type="file" class="file-input file-input-bordered" disabled />
+            <input type="file" @change="handleFile($event)" accept="text/csv" class="file-input file-input-bordered" />
+            <p class="text-xs text-neutral mt-2">Upload a CSV exported from your roster or draftboard. We'll attempt to auto-detect columns.</p>
           </div>
 
           <div class="form-control">
@@ -58,6 +59,214 @@
       </div>
 
       <!-- Player Table -->
+      <div class="card bg-base-100 shadow-lg mb-6" x-show="uploadedCSV" style="display:none">
+        <div class="card-body">
+          <h3 class="card-title">Column Mapping</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div class="form-control">
+              <label class="label"><span class="label-text">Player Name Column</span></label>
+              <select class="select select-bordered" x-model="columnMapper.mapping.playerNameColumn">
+                <option value="">-- select --</option>
+                <template x-for="c in csvColumns" :key="c">
+                  <option x-text="c" :value="c"></option>
+                </template>
+              </select>
+            </div>
+
+            <div class="form-control">
+              <label class="label"><span class="label-text">Team Column</span></label>
+              <select class="select select-bordered" x-model="columnMapper.mapping.teamColumn">
+                <option value="">-- select --</option>
+                <template x-for="c in csvColumns" :key="c">
+                  <option x-text="c" :value="c"></option>
+                </template>
+              </select>
+            </div>
+
+            <div class="form-control">
+              <label class="label"><span class="label-text">Position Column</span></label>
+              <select class="select select-bordered" x-model="columnMapper.mapping.positionColumn">
+                <option value="">-- select --</option>
+                <template x-for="c in csvColumns" :key="c">
+                  <option x-text="c" :value="c"></option>
+                </template>
+              </select>
+            </div>
+
+            <div class="form-control">
+              <label class="label"><span class="label-text">Rank Column</span></label>
+              <select class="select select-bordered" x-model="columnMapper.mapping.rankColumn">
+                <option value="">-- select --</option>
+                <template x-for="c in csvColumns" :key="c">
+                  <option x-text="c" :value="c"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+
+            <div class="mt-4 flex gap-2">
+            <button class="btn btn-primary" @click="saveMapping()">Save mapping</button>
+            <button class="btn btn-ghost" @click="applyMappingPreview()">Preview matches</button>
+            <button class="btn btn-success" @click="uiConfirmUpload()" :disabled="!mappingComplete()">Confirm & Upload</button>
+            <button class="btn btn-outline" @click="transformUploadedRows()">Transform rows</button>
+            <template x-if="mappingPreview">
+              <div class="badge badge-outline">Matches: <span x-text="mappingPreview.length"></span></div>
+            </template>
+          </div>
+
+          <template x-if="uploadedFileName">
+            <div class="mt-4 text-sm text-neutral">
+              <div>File: <strong x-text="uploadedFileName"></strong></div>
+              <div>Size: <strong x-text="(uploadedFileSize/1024).toFixed(1) + ' KB'"></strong></div>
+              <div>Rows: <strong x-text="uploadedRowCount"></strong></div>
+              <div>Parse time: <strong x-text="parseTimeMs + ' ms'"></strong></div>
+              <template x-if="fileWarnings && fileWarnings.length">
+                <div class="alert alert-warning mt-2">
+                  <ul class="list-disc list-inside">
+                    <template x-for="w in fileWarnings" :key="w">
+                      <li x-text="w"></li>
+                    </template>
+                  </ul>
+                  <template x-if="uploadedRowCount > 500">
+                    <div class="mt-2 flex gap-2">
+                      <button class="btn btn-sm btn-outline" @click="trimToTopN(250)">Trim to top 250</button>
+                      <button class="btn btn-sm btn-ghost" @click="trimToTopN(200)">Trim to top 200</button>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+          <!-- Validation modal -->
+          <template x-if="showValidationModal">
+            <div class="fixed inset-0 flex items-center justify-center z-50">
+              <div class="absolute inset-0 bg-black opacity-40"></div>
+              <div class="bg-base-100 rounded shadow-lg p-6 z-10 w-11/12 md:w-1/2">
+                <h3 class="text-lg font-bold">Validation Report</h3>
+                <div class="mt-4">
+                  <p>Total players: <strong x-text="lastValidationReport && lastValidationReport.totalPlayers"></strong></p>
+                  <p class="text-error" x-show="lastValidationReport && lastValidationReport.errorCount > 0">Errors: <strong x-text="lastValidationReport && lastValidationReport.errorCount"></strong></p>
+                  <p class="text-warning" x-show="lastValidationReport && lastValidationReport.warningCount > 0">Warnings: <strong x-text="lastValidationReport && lastValidationReport.warningCount"></strong></p>
+                </div>
+                <div class="mt-4 flex gap-2 justify-end">
+                  <button class="btn btn-ghost" @click="showValidationModal = false">Cancel</button>
+                  <button class="btn btn-primary" @click="proceedAfterValidationModal()">Proceed anyway</button>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="parseErrors && parseErrors.length">
+            <div class="mt-4 alert alert-error">
+              <div class="font-medium">Parsing errors detected</div>
+              <ul class="list-disc list-inside text-sm mt-2">
+                <template x-for="e in parseErrors" :key="JSON.stringify(e)">
+                  <li><strong>Row <span x-text="e.row"></span>:</strong> <span x-text="e.message"></span></li>
+                </template>
+              </ul>
+            </div>
+          </template>
+
+          <template x-if="previewRows && previewRows.length">
+            <div class="mt-4">
+              <h4 class="text-sm font-medium">CSV Preview (first 10 rows)</h4>
+              <div class="overflow-auto mt-2">
+                <table class="table table-compact w-full">
+                  <thead>
+                    <tr>
+                      <template x-for="c in csvColumns" :key="c">
+                        <th x-text="c"></th>
+                      </template>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="r in previewRows" :key="JSON.stringify(r)">
+                      <tr>
+                        <template x-for="c in csvColumns" :key="c">
+                          <td x-text="r[c]"></td>
+                        </template>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+          <template x-if="lastIntegratedPlayers && lastIntegratedPlayers.length">
+            <div class="mt-4 alert alert-success">
+              <div>Last upload saved: <strong x-text="lastIntegratedPlayers.length"></strong> players</div>
+            </div>
+          </template>
+          <template x-if="!mappingComplete()">
+            <div class="mt-2 text-sm text-warning">Mapping incomplete — map required fields (name, team, position, plus at least pts/ast/reb) before confirming upload.</div>
+          </template>
+          <template x-if="transformedUploadedPlayers && transformedUploadedPlayers.length">
+            <div class="mt-2 alert alert-info">Transformed rows: <strong x-text="transformedUploadedPlayers.length"></strong></div>
+          </template>
+
+          <template x-if="mappingPreview && mappingPreview.length">
+            <div class="mt-4">
+              <h4 class="text-sm font-medium">Sample matches</h4>
+              <div class="mt-2 mb-2">
+                <button class="btn btn-sm btn-warning" @click="bulkApplyOverride('all_unmatched', 0)">Apply top alternative to all unmatched</button>
+                <span class="text-xs text-neutral ml-2">(Applies the first alternative for each unmatched player)</span>
+                <div class="mt-2">
+                  <label class="label"><span class="label-text">Bulk apply to selected rows</span></label>
+                  <div class="flex gap-2 items-center">
+                    <select x-model="bulkAlternativeIndex" class="select select-sm select-bordered">
+                      <option value="0">Alternative #1</option>
+                      <option value="1">Alternative #2</option>
+                      <option value="2">Alternative #3</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary" @click="bulkApplySelected()">Apply to selected</button>
+                    <button class="btn btn-sm btn-ghost" @click="selectedPreviewIndexes = []">Clear selection</button>
+                  </div>
+                </div>
+              </div>
+              <ul class="list-none p-0 text-sm">
+                <template x-for="(m, i) in mappingPreview.slice(0,12)" :key="JSON.stringify(m.csvPlayer)">
+                  <li class="mb-3">
+                    <div class="mb-1">
+                      <label style="display:flex;align-items:center">
+                        <input type="checkbox" :value="i" x-model="selectedPreviewIndexes" class="mr-2" />
+                        <span class="text-xs text-neutral">Select</span>
+                      </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <span class="font-medium" x-text="m.csvPlayer.name || (m.csvPlayer && m.csvPlayer[Object.keys(m.csvPlayer)[0]])"></span>
+                        <span class="text-sm text-neutral"> — matched to: <span x-text="m.historicalMatch ? m.historicalMatch.name : '—' "></span></span>
+                        <span class="text-sm"> (<span x-text="m.confidence"></span>%)</span>
+                      </div>
+                      <div>
+                        <template x-if="m.confidence < 90 && m.alternatives && m.alternatives.length">
+                          <button class="btn btn-xs btn-outline" @click="openOverride(i)">Override</button>
+                        </template>
+                      </div>
+                    </div>
+
+                    <template x-if="overrideIndex === i">
+                      <div class="mt-2 p-2 border rounded bg-base-200">
+                        <div class="text-sm mb-2">Select alternative match:</div>
+                        <template x-for="(a, ai) in m.alternatives" :key="a.player.name">
+                          <label style="display:block" class="cursor-pointer">
+                            <input type="radio" name="alt-choices-" :value="ai" @change="setOverrideChoice(ai)" />
+                            <span class="ml-2" x-text="a.player.name + ' (' + a.confidence + '%)' "></span>
+                          </label>
+                        </template>
+                        <div class="mt-2 flex gap-2">
+                          <button class="btn btn-sm btn-primary" @click="applyOverride()">Apply</button>
+                          <button class="btn btn-sm btn-ghost" @click="closeOverride()">Cancel</button>
+                        </div>
+                      </div>
+                    </template>
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </template>
+        </div>
+      </div>
       <div class="card bg-base-100 shadow-lg">
         <div class="card-body">
           <h2 class="card-title">Player Rankings</h2>

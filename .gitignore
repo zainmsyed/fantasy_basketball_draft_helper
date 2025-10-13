@@ -57,3 +57,6 @@ Dockerfile*
 # Misc
 *.tmp
 *.swp
+
+# Node lockfiles (ensure generated locks not accidentally committed from frontend)
+frontend/package-lock.json

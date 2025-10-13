@@ -1,3 +1,19 @@
+export const ERROR_MESSAGES = {
+  INVALID_FILE: 'Invalid file format. Please upload a CSV file.',
+  STORAGE_QUOTA_EXCEEDED: 'Storage quota exceeded. Please clear some drafts.'
+};
+
+export const PERFORMANCE_TARGETS = {
+  csvParsing: 3000,
+  nameMatching: 1000,
+  validation: 100
+};
+
+export const VALIDATION_THRESHOLDS = {
+  minStatsRequired: 6,
+  fgAttemptThreshold: 5,
+  ftAttemptThreshold: 2
+};
 export const TIMING = {
   SEARCH_DEBOUNCE_MS: 100,
   STATE_SAVE_THROTTLE_MS: 400,
@@ -15,3 +31,12 @@ export const DATA_VIEWS = {
 }
 
 export const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C']
+
+export const REQUIRED_MAPPING_FIELDS = [
+  'playerNameColumn',
+  'teamColumn',
+  'positionColumn',
+  'rankColumn',
+  // common stat fields
+  'pts', 'ast', 'reb', 'fg_pct', 'ft_pct', 'threes', 'stl', 'blk', 'to'
+]
