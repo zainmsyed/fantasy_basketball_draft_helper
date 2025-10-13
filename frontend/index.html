@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Basketball Draft Helper - Frontend (Phase 1)</title>
+  </head>
+  <body class="bg-base-100 min-h-screen">
+  <div id="app" x-data="draftHelper()" x-init="init()" class="container mx-auto px-4 py-6">
+      <!-- Top Controls -->
+      <div class="card bg-base-200 shadow-lg mb-6 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="form-control">
+            <label class="label"><span class="label-text">CSV Upload (Phase 2)</span></label>
+            <input type="file" class="file-input file-input-bordered" disabled />
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">Stats View</span></label>
+            <select x-model="activeStatView" @change="changeStatView" class="select select-bordered">
+              <option value="2024-25">2024-25 Actual</option>
+              <option value="2025-26">2025-26 Projected</option>
+            </select>
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">Search Player</span></label>
+            <input x-model="searchQuery" @input="debounceSearch" type="text" placeholder="Enter player name..." class="input input-bordered" />
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">Position</span></label>
+            <div class="flex gap-2 flex-wrap">
+              <label class="cursor-pointer" style="display:flex;align-items:center"><input type="checkbox" x-model="positionFilters" @change="applyFilters" value="PG" class="mr-2" />PG</label>
+              <label class="cursor-pointer" style="display:flex;align-items:center"><input type="checkbox" x-model="positionFilters" @change="applyFilters" value="SG" class="mr-2" />SG</label>
+              <label class="cursor-pointer" style="display:flex;align-items:center"><input type="checkbox" x-model="positionFilters" @change="applyFilters" value="SF" class="mr-2" />SF</label>
+              <label class="cursor-pointer" style="display:flex;align-items:center"><input type="checkbox" x-model="positionFilters" @change="applyFilters" value="PF" class="mr-2" />PF</label>
+              <label class="cursor-pointer" style="display:flex;align-items:center"><input type="checkbox" x-model="positionFilters" @change="applyFilters" value="C" class="mr-2" />C</label>
+              <button type="button" @click="positionFilters = []; applyFilters()" class="btn btn-ghost btn-sm ml-2">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Player Table -->
+      <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+          <h2 class="card-title">Player Rankings</h2>
+          <div id="player-table" class="w-full"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
