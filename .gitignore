@@ -38,6 +38,15 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
+# Node / frontend artifacts
+node_modules/
+frontend/node_modules/
+dist/
+build/
+/.vite
+.env*
+.parcel-cache/
+
 # Terraform
 .terraform/
 
