@@ -120,6 +120,14 @@ export function createDraftHelperStore() {
         this.saveStateThrottled()
       })
     },
+
+    resetFilters() {
+      this.searchQuery = ''
+      this.positionFilters = []
+      // apply and persist
+      this.applyFilters()
+      this.saveState()
+    },
     saveStateThrottled() {
       if (this._saveTimer) return
       this._saveTimer = setTimeout(() => {
