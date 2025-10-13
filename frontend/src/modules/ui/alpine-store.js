@@ -10,6 +10,7 @@ export function createDraftHelperStore() {
     table: null,
     allPlayers: [],
     filteredPlayers: [],
+  loading: false,
     searchTimeout: null,
     _filterRAF: null,
     _saveTimer: null,
@@ -59,11 +60,17 @@ export function createDraftHelperStore() {
     },
 
     async changeStatView() {
-      await this.loadData()
-      // replace table data with full dataset then apply table-side filters
-      if (this.table) this.table.replaceData(this.allPlayers)
-      this.applyFilters()
-      this.saveState()
+      this.loading = true
+      try {
+        await this.loadData()
+        // replace table data with full dataset then apply table-side filters
+        if (this.table) this.table.replaceData(this.allPlayers)
+        this.applyFilters()
+        this.saveState()
+      } finally {
+        // ensure spinner hides even on error
+        this.loading = false
+      }
     },
 
     initializeTable() {
@@ -83,8 +90,9 @@ export function createDraftHelperStore() {
     },
 
     debounceSearch() {
+      // shorter debounce to keep UX snappy but avoid excessive redraws
       clearTimeout(this.searchTimeout)
-      this.searchTimeout = setTimeout(() => this.applyFilters(), 250)
+      this.searchTimeout = setTimeout(() => this.applyFilters(), 100)
     },
 
     applyFilters() {
