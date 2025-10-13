@@ -31,12 +31,12 @@
 
           <div class="form-control">
             <label class="label"><span class="label-text">Search Player</span></label>
-            <input x-model="searchQuery" @input="debounceSearch" type="text" placeholder="Enter player name..." class="input input-bordered" />
+            <input x-model="searchQuery" @input="debounceSearch" type="text" placeholder="Enter player name..." class="input input-bordered" aria-label="Search players by name" role="searchbox" />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text">Position</span></label>
-            <div class="flex gap-2 flex-wrap">
+            <div class="flex gap-2 flex-wrap" role="group" aria-label="Filter by position">
               <label class="cursor-pointer" style="display:flex;align-items:center"><input type="checkbox" x-model="positionFilters" @change="applyFilters" value="PG" class="mr-2" />PG</label>
               <label class="cursor-pointer" style="display:flex;align-items:center"><input type="checkbox" x-model="positionFilters" @change="applyFilters" value="SG" class="mr-2" />SG</label>
               <label class="cursor-pointer" style="display:flex;align-items:center"><input type="checkbox" x-model="positionFilters" @change="applyFilters" value="SF" class="mr-2" />SF</label>
@@ -80,7 +80,7 @@
           </template>
           <div class="relative w-full">
             <div id="player-table" class="w-full"></div>
-            <div x-show="loading" class="absolute inset-0 bg-base-100/60 flex items-center justify-center" style="backdrop-filter: blur(2px);">
+            <div x-show="loading" class="absolute inset-0 bg-base-100/60 flex items-center justify-center" style="backdrop-filter: blur(2px);" role="status" aria-live="polite" aria-label="Loading data">
               <div class="flex items-center gap-2">
                 <svg class="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

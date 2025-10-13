@@ -10,4 +10,4 @@ window.Tabulator = Tabulator
 Alpine.data('draftHelper', createDraftHelperStore)
 Alpine.start()
 
-console.log('Frontend: Draft helper loaded')
+console.info('Frontend: Draft helper loaded')

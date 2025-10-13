@@ -4,10 +4,18 @@ import { loadUIState, saveUIState } from '../src/utils/storage.js'
 function createMockStorage() {
   let store = {}
   return {
-    getItem(key) { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null },
-    setItem(key, value) { store[key] = String(value) },
-    removeItem(key) { delete store[key] },
-    clear() { store = {} }
+    getItem(key) {
+      return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null
+    },
+    setItem(key, value) {
+      store[key] = String(value)
+    },
+    removeItem(key) {
+      delete store[key]
+    },
+    clear() {
+      store = {}
+    },
   }
 }
 
@@ -20,7 +28,9 @@ describe('storage fallback', () => {
 
   it('saves to sessionStorage when localStorage throws', () => {
     const orig = global.localStorage.setItem
-    global.localStorage.setItem = () => { throw new Error('quota') }
+    global.localStorage.setItem = () => {
+      throw new Error('quota')
+    }
     saveUIState({ a: 1 })
     expect(global.sessionStorage.getItem('draft_helper_state')).not.toBeNull()
     global.localStorage.setItem = orig

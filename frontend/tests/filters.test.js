@@ -3,8 +3,8 @@ import { searchPlayers, filterByPosition } from '../src/utils/filters.js'
 
 describe('filters utilities', () => {
   const players = [
-    { name: 'LeBron James', positions: ['SF','PF'] },
-    { name: 'Stephen Curry', positions: ['PG'] }
+    { name: 'LeBron James', positions: ['SF', 'PF'] },
+    { name: 'Stephen Curry', positions: ['PG'] },
   ]
 
   it('searchPlayers finds by name case-insensitive', () => {
