@@ -1,6 +1,7 @@
 import { loadSampleData } from '../../modules/data/sample-loader.js'
 import { createTableConfig } from '../../modules/table/tabulator-config.js'
 import { loadUIState, saveUIState } from '../../utils/storage.js'
+import { isPersistentStorageAvailable } from '../../utils/storage.js'
 
 export function createDraftHelperStore() {
   return {
@@ -10,6 +11,13 @@ export function createDraftHelperStore() {
     table: null,
     allPlayers: [],
     filteredPlayers: [],
+    // profiler/dev tooling
+    profilerRunning: false,
+    profilerResults: [],
+    showProfiler: false,
+    storageAvailable: true,
+  // global error state for user-friendly error boundaries
+  errorMessage: null,
   loading: false,
     searchTimeout: null,
     _filterRAF: null,
@@ -29,13 +37,44 @@ export function createDraftHelperStore() {
         } finally {
           this.loading = false
         }
+        // surface persistence availability
+        try { this.storageAvailable = !!isPersistentStorageAvailable() } catch(e) { this.storageAvailable = false }
+        // enable dev profiler UI when ?profiler is present in the URL
+        try { this.showProfiler = typeof window !== 'undefined' && window.location && window.location.search && window.location.search.indexOf('profiler') !== -1 } catch(e) { this.showProfiler = false }
         this.initializeTable()
         // apply filters initially (restore state)
         this.applyFilters()
+
+        // Install a simple global error boundary to surface uncaught errors to the UI
+        try {
+          const self = this
+          if (typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('error', function (ev) {
+              try {
+                const msg = ev && ev.message ? ev.message : String(ev)
+                console.error('Uncaught error', ev)
+                self.errorMessage = `An unexpected error occurred: ${msg}`
+              } catch (e) { /* ignore */ }
+            })
+            window.addEventListener('unhandledrejection', function (ev) {
+              try {
+                const reason = ev && ev.reason ? ev.reason : ev
+                console.error('Unhandled rejection', ev)
+                self.errorMessage = `An unexpected error occurred: ${String(reason)}`
+              } catch (e) { /* ignore */ }
+            })
+          }
+        } catch (e) {
+          // swallow - error boundary best-effort
+        }
       } catch (err) {
         console.error('init error', err)
         alert('Failed to initialize app')
       }
+    },
+
+    clearError() {
+      this.errorMessage = null
     },
 
     async loadData() {
@@ -81,6 +120,83 @@ export function createDraftHelperStore() {
       } finally {
         // ensure spinner hides even on error
         this.loading = false
+      }
+    },
+
+    // Wait until the filter rAF job has cleared
+    async _waitForFilterFlush() {
+      // poll for the RAF handle to be cleared
+      return new Promise((resolve) => {
+        const check = () => {
+          if (!this._filterRAF) return resolve()
+          setTimeout(check, 10)
+        }
+        check()
+      })
+    },
+
+    // Simple in-app profiler for T037 (dev-only): runs a few interactions and measures durations.
+    async runProfiler() {
+      if (this.profilerRunning) return
+      this.profilerRunning = true
+      this.profilerResults = []
+      const measures = []
+
+      const measure = async (name, fn) => {
+        const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()
+        await fn()
+        // if filters were queued, wait until they finish
+        try { await this._waitForFilterFlush() } catch (e) {}
+        const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()
+        const dur = t1 - t0
+        measures.push({ name, durationMs: dur })
+        // keep console-friendly output
+        try { console.info(`[profiler] ${name}: ${dur.toFixed(2)} ms`) } catch (e) {}
+      }
+
+      try {
+        // 1) Warmup: ensure table is present
+        await measure('warmup-noop', async () => { /* noop */ })
+
+        // 2) Search filter: simulate a user typing a query and applying filter
+        await measure('search-filter', async () => {
+          this.searchQuery = 'lebron'
+          // apply and wait for filter flush
+          this.applyFilters()
+        })
+
+        // 3) Position toggle
+        await measure('position-filter', async () => {
+          this.positionFilters = ['PG']
+          this.applyFilters()
+        })
+
+        // 4) Stat view switch to projected (async load)
+        await measure('statview-switch-to-projected', async () => {
+          this.activeStatView = (this.activeStatView === '2025-26') ? '2024-25' : '2025-26'
+          // reuse changeStatView to fully reload and replace table data
+          await this.changeStatView()
+        })
+
+        // 5) Stat view switch back
+        await measure('statview-switch-back', async () => {
+          this.activeStatView = (this.activeStatView === '2025-26') ? '2024-25' : '2025-26'
+          await this.changeStatView()
+        })
+
+        // finalize results
+        this.profilerResults = measures
+        // compute simple aggregates
+        const durations = measures.map(m => m.durationMs).sort((a,b)=>a-b)
+        const p = (i) => durations.length ? durations[Math.min(durations.length-1, Math.floor(i * durations.length))] : 0
+        const summary = { p50: p(0.5), p90: p(0.9), p99: p(0.99), raw: measures }
+        try { console.info('[profiler] summary', summary) } catch(e){}
+        this.profilerResults = { summary, measures }
+      } catch (err) {
+        console.error('profiler error', err)
+        this.profilerResults = { error: String(err), measures }
+      } finally {
+        this.profilerRunning = false
       }
     },
 

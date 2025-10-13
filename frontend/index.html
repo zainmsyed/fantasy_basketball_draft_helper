@@ -45,6 +45,15 @@
               <button type="button" @click="resetFilters()" class="btn btn-ghost btn-sm ml-2">Reset</button>
             </div>
           </div>
+          <div class="form-control" x-show="showProfiler" style="display:flex;align-items:center">
+            <label class="label"><span class="label-text">Dev Profiler</span></label>
+            <div class="flex items-center gap-2">
+              <button type="button" @click="runProfiler()" :class="profilerRunning ? 'btn btn-disabled' : 'btn btn-primary'" class="btn">Run Profiler</button>
+              <template x-if="profilerResults && profilerResults.summary">
+                <span class="text-sm">p50: <span x-text="(profilerResults.summary.p50 || 0).toFixed(1)"></span>ms</span>
+              </template>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -52,6 +61,23 @@
       <div class="card bg-base-100 shadow-lg">
         <div class="card-body">
           <h2 class="card-title">Player Rankings</h2>
+          <template x-if="!storageAvailable">
+            <div class="alert alert-warning mb-4">
+              <div>
+                <span>Browser storage unavailable — settings will not persist across sessions.</span>
+              </div>
+            </div>
+          </template>
+          <template x-if="errorMessage">
+            <div class="alert alert-error mb-4">
+              <div>
+                <span x-text="errorMessage"></span>
+              </div>
+              <div class="flex-none">
+                <button @click="clearError()" class="btn btn-sm btn-ghost">Dismiss</button>
+              </div>
+            </div>
+          </template>
           <div class="relative w-full">
             <div id="player-table" class="w-full"></div>
             <div x-show="loading" class="absolute inset-0 bg-base-100/60 flex items-center justify-center" style="backdrop-filter: blur(2px);">
@@ -63,6 +89,16 @@
                 <span class="text-sm">Loading data…</span>
               </div>
             </div>
+            <template x-if="table && table.getData && table.getData().length === 0 && !loading">
+              <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="text-center text-sm text-neutral">
+                  <div>No players match the current filters.</div>
+                  <div class="mt-2">
+                    <button @click="resetFilters()" class="btn btn-xs btn-outline">Clear filters</button>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>
