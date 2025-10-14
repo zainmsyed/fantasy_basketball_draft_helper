@@ -1,8 +1,12 @@
 const MAPPING_KEY = 'draft_helper:column_mapping';
 
+const INTEGRATED_KEY = 'draft_helper:integrated_players';
+const VALIDATION_KEY = 'draft_helper:validation_report';
+
 export function saveColumnMapping(mapping) {
   try {
-    localStorage.setItem(MAPPING_KEY, JSON.stringify(mapping));
+    const payload = Object.assign({}, mapping, { savedAt: new Date().toISOString() })
+    localStorage.setItem(MAPPING_KEY, JSON.stringify(payload));
     return true;
   } catch (e) {
     console.warn('Failed to save mapping', e);
@@ -46,6 +50,19 @@ export async function saveIntegratedPlayers(players) {
     console.warn('Failed to save integrated players', e);
     throw e;
   }
+}
+
+export function loadIntegratedPlayers() {
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem) {
+      const raw = localStorage.getItem(INTEGRATED_KEY);
+      if (!raw) return [];
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    // ignore
+  }
+  return [];
 }
 
 export async function loadHistoricalStats(url = '/data/last_year_stats.json', attempts = 3) {
@@ -182,4 +199,43 @@ export function loadOverrides() {
     // ignore
   }
   return []
+}
+
+export function saveValidationReport(report) {
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.setItem) {
+      const payload = Object.assign({}, report, { savedAt: new Date().toISOString() })
+      localStorage.setItem(VALIDATION_KEY, JSON.stringify(payload))
+      return true
+    }
+  } catch (e) {
+    console.warn('Failed to save validation report', e)
+  }
+  return false
+}
+
+export function loadValidationReport() {
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem) {
+      const raw = localStorage.getItem(VALIDATION_KEY)
+      if (!raw) return null
+      return JSON.parse(raw)
+    }
+  } catch (e) {}
+  return null
+}
+
+export function clearUploadData() {
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.removeItem) {
+      localStorage.removeItem(INTEGRATED_KEY)
+      localStorage.removeItem(MAPPING_KEY)
+      localStorage.removeItem(VALIDATION_KEY)
+      localStorage.removeItem(OVERRIDES_KEY)
+      return true
+    }
+  } catch (e) {
+    console.warn('clearUploadData failed', e)
+  }
+  return false
 }

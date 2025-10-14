@@ -6,7 +6,7 @@ import { isPersistentStorageAvailable } from '../../utils/storage.js'
 import { parseCSV } from '../../modules/data/csv-parser.js'
 import { createColumnMapper } from './column-mapper.js'
 import { matchPlayers } from '../../modules/data/name-matcher.js'
-import { loadHistoricalStats, saveIntegratedPlayers, saveOverrides, loadOverrides } from '../../utils/storage.js'
+import { loadHistoricalStats, saveIntegratedPlayers, saveOverrides, loadOverrides, loadIntegratedPlayers, saveValidationReport, clearUploadData, checkStorageQuota } from '../../utils/storage.js'
 import { mergeFromPreview } from '../../modules/data/data-merger.js'
 import { validatePlayers } from '../../modules/data/data-validator.js'
 import { transformRowToUploaded, validateMappingComplete } from '../../modules/data/csv-transformer.js'
@@ -39,6 +39,8 @@ export function createDraftHelperStore() {
   uploadedRowCount: 0,
   parseTimeMs: 0,
   previewRows: [],
+  // rows skipped due to blank player names (store row numbers)
+  skippedRows: [],
   fileWarnings: [],
   parseErrors: [],
   // last integrated players (in-memory) for preview
@@ -47,6 +49,10 @@ export function createDraftHelperStore() {
   lastValidationReport: null,
   // UI modal state for validation confirmation
   showValidationModal: false,
+  // re-upload overwrite confirmation modal
+  showReuploadModal: false,
+  // clear persisted upload confirmation modal
+  showClearUploadConfirm: false,
   transformedUploadedPlayers: [],
   // manual override UI state
   overrideIndex: null,
@@ -441,10 +447,24 @@ export function createDraftHelperStore() {
         try {
           const hist = await loadHistoricalStats()
           // create simple csvPlayers array for matching using detected column names
-          const players = (res.data || []).map(r => ({
-            name: this.columnMapper.mapping.playerNameColumn ? r[this.columnMapper.mapping.playerNameColumn] : r[Object.keys(r)[0]],
-            team: this.columnMapper.mapping.teamColumn ? r[this.columnMapper.mapping.teamColumn] : undefined
-          }))
+          // Build players list for matching; include row index and skip blank-name rows
+          this.skippedRows = []
+          const players = (res.data || []).map((r, idx) => {
+            const name = this.columnMapper.mapping.playerNameColumn ? r[this.columnMapper.mapping.playerNameColumn] : r[Object.keys(r)[0]]
+            const team = this.columnMapper.mapping.teamColumn ? r[this.columnMapper.mapping.teamColumn] : undefined
+            const rowIndex = r.__rowNum__ != null ? r.__rowNum__ : (r._rowIndex != null ? r._rowIndex : idx + 1)
+            return { name: name, team: team, csvRowIndex: rowIndex }
+          }).filter(p => {
+            if (!p || !p.name || String(p.name).trim() === '') {
+              // record skipped row number
+              try { this.skippedRows.push(p && p.csvRowIndex ? p.csvRowIndex : null) } catch (e) {}
+              return false
+            }
+            return true
+          })
+          if (this.skippedRows && this.skippedRows.length) {
+            this.fileWarnings.push(`Skipped ${this.skippedRows.length} row(s) with blank player name(s): ${this.skippedRows.filter(Boolean).join(', ')}`)
+          }
           this.mappingPreview = matchPlayers(players, hist)
           // apply any saved manual overrides to the preview
           try {
@@ -496,11 +516,24 @@ export function createDraftHelperStore() {
       if (!this.uploadedCSV || !this.columnMapper) return
       try {
         const res = this.uploadedCSV
-        const players = (res.data || []).map(r => ({
-          name: this.columnMapper.mapping.playerNameColumn ? r[this.columnMapper.mapping.playerNameColumn] : r[Object.keys(r)[0]],
-          team: this.columnMapper.mapping.teamColumn ? r[this.columnMapper.mapping.teamColumn] : undefined
-        }))
+        // Build players list for matching; include row index and skip blank-name rows
+        this.skippedRows = []
+        const players = (res.data || []).map((r, idx) => {
+          const name = this.columnMapper.mapping.playerNameColumn ? r[this.columnMapper.mapping.playerNameColumn] : r[Object.keys(r)[0]]
+          const team = this.columnMapper.mapping.teamColumn ? r[this.columnMapper.mapping.teamColumn] : undefined
+          const rowIndex = r.__rowNum__ != null ? r.__rowNum__ : (r._rowIndex != null ? r._rowIndex : idx + 1)
+          return { name: name, team: team, csvRowIndex: rowIndex }
+        }).filter(p => {
+          if (!p || !p.name || String(p.name).trim() === '') {
+            try { this.skippedRows.push(p && p.csvRowIndex ? p.csvRowIndex : null) } catch (e) {}
+            return false
+          }
+          return true
+        })
         const hist = await loadHistoricalStats()
+        if (this.skippedRows && this.skippedRows.length) {
+          this.fileWarnings.push(`Skipped ${this.skippedRows.length} row(s) with blank player name(s): ${this.skippedRows.filter(Boolean).join(', ')}`)
+        }
         this.mappingPreview = matchPlayers(players, hist)
         // apply saved overrides if present
         try {
@@ -587,6 +620,7 @@ export function createDraftHelperStore() {
             validPlayers: Math.max(0, totalPlayers - errorCount),
             matchedPlayers: integrated.filter(p => p.hasHistoricalData).length,
             unmatchedPlayers: integrated.filter(p => !p.hasHistoricalData).map(p => p.name || ''),
+            skippedRows: Array.isArray(this.skippedRows) ? this.skippedRows.filter(Boolean) : [],
             errorCount,
             warningCount,
             infoCount,
@@ -606,12 +640,49 @@ export function createDraftHelperStore() {
           // allow persistence to proceed if validation itself fails unexpectedly
         }
 
+        // storage quota check and re-upload warning
+        try {
+          const quota = await checkStorageQuota()
+          if (quota && quota.warning) {
+            this.fileWarnings.push('Storage usage above 80% - saving may fail.')
+          }
+        } catch (e) {
+          // ignore quota check failures
+        }
+
+        // If existing integrated data present, we warn before overwrite
+        try {
+          const existing = loadIntegratedPlayers()
+          if (existing && existing.length) {
+            // indicate re-upload warning to UI; UI may call uiConfirmUpload which shows modal
+            this.fileWarnings.push('Existing draft data detected; uploading will overwrite stored draft.')
+          }
+        } catch (e) {}
+
         // attempt to persist
         await saveIntegratedPlayers(integrated)
+        // also persist validation report if available
+        try { if (this.lastValidationReport) saveValidationReport(this.lastValidationReport) } catch (e) {}
         return true
       } catch (e) {
         console.error('confirmUpload failed', e)
         this.errorMessage = `Failed to save integrated players: ${String(e)}`
+        return false
+      }
+    },
+
+    // Clear persisted upload data (integrated players, mapping, overrides, validation)
+    clearUploadData() {
+      try {
+        const ok = clearUploadData()
+        if (ok) {
+          this.fileWarnings.push('Saved upload data cleared from storage.')
+        } else {
+          this.fileWarnings.push('Failed to clear saved upload data.')
+        }
+        return ok
+      } catch (e) {
+        console.warn('clearUploadData UI call failed', e)
         return false
       }
     },
@@ -657,8 +728,52 @@ export function createDraftHelperStore() {
         // fall back to direct confirmUpload
       }
 
+      // If there's existing saved draft data, ask user to confirm overwrite
+      try {
+        const existing = loadIntegratedPlayers()
+        if (existing && existing.length) {
+          this.showReuploadModal = true
+          // ui will call proceedAfterReuploadModal() to continue
+          return false
+        }
+      } catch (e) {
+        // ignore load errors and continue
+      }
+
       // No issues - proceed to persist
       return await this.confirmUpload()
+    },
+
+    // Called by re-upload modal when user confirms overwrite
+    async proceedAfterReuploadModal() {
+      this.showReuploadModal = false
+      return await this.confirmUpload()
+    },
+
+    // Open clear upload confirmation
+    openClearUploadConfirm() {
+      this.showClearUploadConfirm = true
+    },
+
+    // Called by clear upload modal to actually clear persisted data
+    doClearUploadData() {
+      try {
+        const ok = clearUploadData()
+        this.showClearUploadConfirm = false
+        if (ok) {
+          this.fileWarnings.push('Saved upload data cleared from storage.')
+          // refresh in-memory state
+          this.lastIntegratedPlayers = []
+          this.lastValidationReport = null
+        } else {
+          this.fileWarnings.push('Failed to clear saved upload data.')
+        }
+        return ok
+      } catch (e) {
+        console.warn('doClearUploadData failed', e)
+        this.showClearUploadConfirm = false
+        return false
+      }
     },
 
     // Called by modal when user chooses to proceed despite warnings/errors

@@ -165,6 +165,8 @@ npm test --silent
 
 **Checkpoint**: At this point, all edge cases are handled - All user stories (US1-US5) work independently
 
+**Status update (2025-10-14)**: US5 edge-case tasks (T043 - T050) were implemented and verified: name normalization, duplicate handling, position mismatch detection, rookie detection (UI badge), large-file warnings, encoding detection/fallbacks, missing-header detection, and skipping blank player rows with reporting. Frontend unit/integration tests were run and passed after these changes.
+
 ---
 
 ## Phase 8: Data Persistence & Storage
@@ -177,6 +179,16 @@ npm test --silent
 - [ ] T054 [Storage] Store column mapping: save ColumnMapping after successful upload, update savedAt timestamp
 - [ ] T055 [Storage] Store validation report: save ValidationReport for reference, display in UI on demand
 - [ ] T056 [Storage] Add clear data functionality: "Clear Upload Data" button, confirmation dialog, remove from localStorage
+
+Status update (2025-10-14): Implemented Phase 8 storage features. Summary:
+- T051: quota monitoring via `checkStorageQuota()` with 80% warning added before saving.
+- T052: re-upload detection and confirmation modal implemented (`showReuploadModal`).
+- T053: `saveIntegratedPlayers` persists integrated players; `loadIntegratedPlayers` added.
+- T054: `saveColumnMapping` now records `savedAt` timestamp.
+- T055: validation report persistence (`saveValidationReport`/`loadValidationReport`) implemented.
+- T056: Clear Upload Data UI and `clearUploadData()` implemented; wired to a button in the mapping UI.
+
+All related frontend tests were executed and passed after these changes.
 
 **Checkpoint**: Data persistence complete, all user stories remain independently functional
 

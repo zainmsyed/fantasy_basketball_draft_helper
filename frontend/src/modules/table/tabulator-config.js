@@ -4,6 +4,31 @@ const percentFormatter = (cell) => {
   const value = cell.getValue()
   return value == null ? '' : `${(value * 100).toFixed(1)}%`
 }
+// simple escaping to avoid XSS in table cell content
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+const nameFormatter = (cell) => {
+  const row = cell.getRow().getData() || {}
+  const name = cell.getValue() || ''
+  const badges = []
+  // Rookie badge when no historical data
+  if (row.hasHistoricalData === false) {
+    badges.push(`<span class="badge badge-info" title="Rookie - No historical data">Rookie</span>`)
+  }
+  // Low confidence indicator
+  if (typeof row.matchConfidence === 'number' && row.matchConfidence > 0 && row.matchConfidence < 90) {
+    badges.push(`<span class="badge badge-warning" title="Match confidence: ${row.matchConfidence}%">Low confidence</span>`)
+  }
+  const badgeHtml = badges.length ? ` <span class="ml-2">${badges.join(' ')}</span>` : ''
+  return `<div class="name-cell">${escapeHtml(name)}${badgeHtml}</div>`
+}
 
 export function createTableConfig(data) {
   return {
@@ -18,7 +43,7 @@ export function createTableConfig(data) {
     index: 'id',
     // no pagination: single scroll; virtual DOM still limits actual rows rendered
     columns: [
-      { title: 'Name', field: 'name', headerFilter: false, hozAlign: 'left' },
+      { title: 'Name', field: 'name', headerFilter: false, hozAlign: 'left', formatter: nameFormatter },
       { title: 'Team', field: 'team', width: 80 },
       { title: 'Pos', field: '_pos_display', width: 90 },
       { title: 'GP', field: 'gp', sorter: 'number', width: 70 },
