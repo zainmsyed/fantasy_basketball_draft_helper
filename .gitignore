@@ -44,8 +44,15 @@ frontend/node_modules/
 dist/
 build/
 /.vite
+frontend/.vite/
+frontend/dist/
 .env*
 .parcel-cache/
+frontend/.cache/
+coverage/
+frontend/coverage/
+/.puppeteer-cache
+frontend/.puppeteer-cache
 
 # Terraform
 .terraform/

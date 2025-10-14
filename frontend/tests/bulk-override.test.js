@@ -1,12 +1,12 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest'
 import { createDraftHelperStore } from '../src/modules/ui/alpine-store.js'
-import { saveOverrides, loadOverrides } from '../src/utils/storage.js'
+import { loadOverrides } from '../src/utils/storage.js'
 
 describe('bulkApplyOverride', () => {
   const OLD = global.localStorage
   beforeEach(() => {
     // simple localStorage mock for persistence in tests
-    let store = {}
+    const store = {}
     global.localStorage = {
       getItem: (k) => (k in store ? store[k] : null),
       setItem: (k, v) => { store[k] = v },

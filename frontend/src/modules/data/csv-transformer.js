@@ -1,6 +1,4 @@
 import { normalizePercentage } from '../../utils/string-utils.js'
-import { isValidPosition } from '../../utils/validators.js'
-import { REQUIRED_MAPPING_FIELDS } from '../../config/constants.js'
 
 /**
  * Transform a CSV row into UploadedPlayer using mapping
@@ -41,7 +39,10 @@ export function transformRowToUploaded(row = {}, mapping = {}) {
     name: name || '',
     team: team || null,
     positions,
+    position: positionRaw,
     projectedStats,
+    // if parser included a row index, keep it for reporting
+    csvRowIndex: row.__rowNum__ != null ? row.__rowNum__ : (row._rowIndex != null ? row._rowIndex : null)
   }
 }
 

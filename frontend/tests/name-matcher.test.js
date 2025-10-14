@@ -20,7 +20,7 @@ describe('name-matcher', () => {
     const csv = [{ name: 'Nikola Jokić', team: 'DEN' }];
     const res = matchPlayers(csv, historical);
     expect(res[0].confidence).toBeGreaterThan(80);
-    expect(res[0].historicalMatch.name).toBe('Nikola Jokic' || 'Nikola Jokic');
+    expect(res[0].historicalMatch.name).toBe('Nikola Jokic');
   });
 
   it('uses team as tiebreaker when multiple similar names', () => {

@@ -154,14 +154,14 @@ npm test --silent
 
 ### Implementation for User Story 5
 
-- [ ] T043 [P] [US5] Add character normalization to name matching: NFD normalization, accent removal, handle special characters (Jokić, Dončić)
-- [ ] T044 [P] [US5] Implement duplicate name handling: detect duplicate names, show both options in manual override, use team for disambiguation
-- [ ] T045 [US5] Add position mismatch detection: compare CSV position vs historical position, flag discrepancy with info icon, use CSV as source of truth
-- [ ] T046 [US5] Add rookie player detection: identify players without historical data, display "Rookie - No historical data" badge, include with projections only
-- [ ] T047 [US5] Handle large file warnings: detect >500 players, show performance warning modal, recommend trimming to top 200-250
-- [ ] T048 [US5] Add encoding detection: attempt UTF-8 decoding, handle non-UTF-8 files, display encoding error with recommendations
-- [ ] T049 [US5] Handle missing headers: detect CSVs without header row, display error message asking user to add headers
-- [ ] T050 [US5] Handle blank player names: skip rows with blank names, report in validation summary with row numbers
+- [x] T043 [P] [US5] Add character normalization to name matching: NFD normalization, accent removal, handle special characters (Jokić, Dončić)
+- [x] T044 [P] [US5] Implement duplicate name handling: detect duplicate names, show both options in manual override, use team for disambiguation
+- [x] T045 [US5] Add position mismatch detection: compare CSV position vs historical position, flag discrepancy with info icon, use CSV as source of truth
+- [x] T046 [US5] Add rookie player detection: identify players without historical data, display "Rookie - No historical data" badge, include with projections only
+ - [x] T047 [US5] Handle large file warnings: detect >500 players, show performance warning modal, recommend trimming to top 200-250
+ - [x] T048 [US5] Add encoding detection: attempt UTF-8 decoding, handle non-UTF-8 files, display encoding error with recommendations
+- [x] T049 [US5] Handle missing headers: detect CSVs without header row, display error message asking user to add headers
+- [x] T050 [US5] Handle blank player names: skip rows with blank names, report in validation summary with row numbers
 
 **Checkpoint**: At this point, all edge cases are handled - All user stories (US1-US5) work independently
 

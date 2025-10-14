@@ -156,6 +156,25 @@
             </div>
           </template>
 
+          <!-- Large file performance modal -->
+          <template x-if="showLargeFileModal">
+            <div class="fixed inset-0 flex items-center justify-center z-50">
+              <div class="absolute inset-0 bg-black opacity-40"></div>
+              <div class="bg-base-100 rounded shadow-lg p-6 z-10 w-11/12 md:w-1/2">
+                <h3 class="text-lg font-bold">Large file detected</h3>
+                <div class="mt-4">
+                  <p>We detected <strong x-text="uploadedRowCount"></strong> rows in your CSV. Processing very large files can be slow in the browser and may impact responsiveness.</p>
+                  <p class="mt-2">Recommended: trim to the top 200–250 players for best performance during matching and validation.</p>
+                </div>
+                <div class="mt-4 flex gap-2 justify-end">
+                  <button class="btn btn-ghost" @click="showLargeFileModal = false">Continue without trimming</button>
+                  <button class="btn btn-outline" @click="trimToTopN(250); showLargeFileModal = false">Trim to top 250</button>
+                  <button class="btn btn-primary" @click="trimToTopN(200); showLargeFileModal = false">Trim to top 200</button>
+                </div>
+              </div>
+            </div>
+          </template>
+
           <template x-if="parseErrors && parseErrors.length">
             <div class="mt-4 alert alert-error">
               <div class="font-medium">Parsing errors detected</div>
@@ -239,7 +258,7 @@
                         <span class="text-sm"> (<span x-text="m.confidence"></span>%)</span>
                       </div>
                       <div>
-                        <template x-if="m.confidence < 90 && m.alternatives && m.alternatives.length">
+                        <template x-if="((m.confidence < 90) || (m.matchType === 'ambiguous')) && m.alternatives && m.alternatives.length">
                           <button class="btn btn-xs btn-outline" @click="openOverride(i)">Override</button>
                         </template>
                       </div>
@@ -250,7 +269,7 @@
                         <div class="text-sm mb-2">Select alternative match:</div>
                         <template x-for="(a, ai) in m.alternatives" :key="a.player.name">
                           <label style="display:block" class="cursor-pointer">
-                            <input type="radio" name="alt-choices-" :value="ai" @change="setOverrideChoice(ai)" />
+                            <input type="radio" :name="'alt-choices-'+i" :value="ai" @change="setOverrideChoice(ai)" :checked="overrideChoice === ai" />
                             <span class="ml-2" x-text="a.player.name + ' (' + a.confidence + '%)' "></span>
                           </label>
                         </template>

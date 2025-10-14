@@ -15,10 +15,13 @@ export function matchPlayers(csvPlayers, historicalData, options = {}) {
   // historicalData may be an object keyed by name or an array
   const historicalList = Array.isArray(historicalData) ? historicalData : Object.values(historicalData || {});
 
+  // Convert confidence threshold (0-100) to Fuse.js score (0-1)
+  const fuseThreshold = 1 - (confidenceThreshold / 100);
+
   // build Fuse index
   const fuse = new Fuse(historicalList, {
     keys: ['name'],
-    threshold: 0.15,
+    threshold: fuseThreshold,
     ignoreLocation: true,
     includeScore: true
   });
@@ -40,14 +43,28 @@ export function matchPlayers(csvPlayers, historicalData, options = {}) {
       };
     }
 
-    const exact = historicalList.find(h => normalizeName(h.name) === norm);
-    if (exact) {
+    // find all exact-normalized matches (to detect duplicates/ambiguous exact matches)
+    const exactNormMatches = historicalList.filter(h => normalizeName(h.name) === norm);
+    if (exactNormMatches && exactNormMatches.length === 1) {
+      const exact = exactNormMatches[0]
       return {
         csvPlayer,
         historicalMatch: exact,
         confidence: 100,
         matchType: 'exact',
         alternatives: []
+      };
+    }
+
+    // If multiple exact-normalized matches exist, mark as ambiguous and expose alternatives
+    if (exactNormMatches && exactNormMatches.length > 1) {
+      const alts = exactNormMatches.map(p => ({ player: p, confidence: 100 }));
+      return {
+        csvPlayer,
+        historicalMatch: null,
+        confidence: 0,
+        matchType: 'ambiguous',
+        alternatives: alts
       };
     }
 

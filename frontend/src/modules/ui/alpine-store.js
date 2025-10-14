@@ -3,13 +3,12 @@ import { createTableConfig } from '../../modules/table/tabulator-config.js'
 import { loadUIState, saveUIState } from '../../utils/storage.js'
 import { TIMING } from '../../config/constants.js'
 import { isPersistentStorageAvailable } from '../../utils/storage.js'
-import { parseCSV, autoDetectMapping } from '../../modules/data/csv-parser.js'
+import { parseCSV } from '../../modules/data/csv-parser.js'
 import { createColumnMapper } from './column-mapper.js'
 import { matchPlayers } from '../../modules/data/name-matcher.js'
 import { loadHistoricalStats, saveIntegratedPlayers, saveOverrides, loadOverrides } from '../../utils/storage.js'
 import { mergeFromPreview } from '../../modules/data/data-merger.js'
 import { validatePlayers } from '../../modules/data/data-validator.js'
-import { createValidationReporter } from './validation-reporter.js'
 import { transformRowToUploaded, validateMappingComplete } from '../../modules/data/csv-transformer.js'
 
 export function createDraftHelperStore() {
@@ -32,6 +31,7 @@ export function createDraftHelperStore() {
   uploadedCSV: null,
   csvColumns: [],
   columnMapper: null,
+  showLargeFileModal: false,
   mappingPreview: null,
   // preview / metadata
   uploadedFileName: null,
@@ -349,7 +349,39 @@ export function createDraftHelperStore() {
 
         this.loading = true
         const t0 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
-        const text = await file.text()
+        // Attempt robust decoding: try UTF-8, fallback to windows-1252 if replacement chars detected
+        const arrayBuffer = await file.arrayBuffer()
+        let text = null
+        try {
+          const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer)
+          // If replacement character present, attempt windows-1252 fallback
+          if (utf8.indexOf('\uFFFD') !== -1) {
+            try {
+              const win = new TextDecoder('windows-1252', { fatal: false }).decode(arrayBuffer)
+              // if windows-1252 produces fewer replacement chars, use it
+              if (win.indexOf('\uFFFD') === -1 || win.indexOf('\uFFFD') < utf8.indexOf('\uFFFD')) {
+                text = win
+                this.fileWarnings.push('File decoded with windows-1252 fallback due to invalid UTF-8 characters.')
+              } else {
+                text = utf8
+                this.fileWarnings.push('File contains invalid UTF-8 characters; some characters may be replaced.')
+              }
+            } catch (we) {
+              text = utf8
+              this.fileWarnings.push('File contains invalid UTF-8 characters; decoding fallback failed.')
+            }
+          } else {
+            text = utf8
+          }
+        } catch (e) {
+          // Last resort: try windows-1252
+          try {
+            text = new TextDecoder('windows-1252', { fatal: false }).decode(arrayBuffer)
+            this.fileWarnings.push('File decoded with windows-1252 fallback due to UTF-8 decode error.')
+          } catch (ee) {
+            throw new Error('Failed to decode uploaded file as UTF-8 or windows-1252')
+          }
+        }
         const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
         this.parseTimeMs = Math.max(0, t1 - t0)
         await this.loadCSVFromString(text)
@@ -372,15 +404,31 @@ export function createDraftHelperStore() {
         this.csvColumns = res && res.meta && res.meta.columns ? res.meta.columns : []
         this.uploadedRowCount = res && res.meta && res.meta.rowCount ? res.meta.rowCount : (Array.isArray(res.data) ? res.data.length : 0)
         // prepare a small preview of first 10 rows
-        this.previewRows = (res.data || []).slice(0, 10)
+        // ensure each row has a stable row index for reporting (PapaParse may not include one)
+        const rows = Array.isArray(res.data) ? res.data : []
+        for (let i = 0; i < rows.length; i++) {
+          if (rows[i] && rows[i].__rowNum__ == null) rows[i].__rowNum__ = i + 1
+          if (rows[i] && rows[i]._rowIndex == null) rows[i]._rowIndex = i + 1
+        }
+        this.previewRows = rows.slice(0, 10)
         // capture parse errors (PapaParse returns results.errors[])
         this.parseErrors = Array.isArray(res.errors) ? res.errors.map(e => ({row: e.row, message: e.message, code: e.code})) : []
         if (this.parseErrors.length) {
           this.fileWarnings.push(`${this.parseErrors.length} parsing issue(s) detected`)
         }
+        // missing header detection
+        if (!this.csvColumns || this.csvColumns.length === 0) {
+          this.fileWarnings.push('CSV appears to have no header row. Please include headers or use the "Has header" option.')
+        }
+        // encoding detection: look for replacement characters in text
+        if (typeof csvText === 'string' && csvText.indexOf('\uFFFD') !== -1) {
+          this.fileWarnings.push('File encoding may be invalid or contains unsupported characters. Ensure UTF-8 encoding.')
+        }
         // large file guidance
         if (this.uploadedRowCount > 500) {
           this.fileWarnings.push('Large file detected (>500 rows). Consider trimming to top 200-300 players for performance.')
+          // show modal once to recommend trimming
+          try { this.showLargeFileModal = true } catch (e) {}
         }
         // performance warning: parsing time threshold
         if (this.parseTimeMs > 3000) {
@@ -646,7 +694,16 @@ export function createDraftHelperStore() {
     // Manual override helpers for mappingPreview
     openOverride(i) {
       this.overrideIndex = i
-      this.overrideChoice = null
+      try {
+        const entry = this.mappingPreview && Array.isArray(this.mappingPreview) ? this.mappingPreview[i] : null
+        if (entry && entry.alternatives && entry.alternatives.length) {
+          this.overrideChoice = 0
+        } else {
+          this.overrideChoice = null
+        }
+      } catch (e) {
+        this.overrideChoice = null
+      }
     },
 
     closeOverride() {

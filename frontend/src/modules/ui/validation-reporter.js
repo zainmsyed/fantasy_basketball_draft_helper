@@ -27,6 +27,8 @@ export function createValidationReporter() {
         const matchedPlayers = players.filter(p => p.hasHistoricalData).length
         const unmatchedPlayers = players.filter(p => !p.hasHistoricalData).map(p => p.name || '')
         const playerIssues = new Map()
+        const fgThresholdFailures = []
+        const ftThresholdFailures = []
         let errorCount = 0
         let warningCount = 0
         let infoCount = 0
@@ -34,11 +36,14 @@ export function createValidationReporter() {
         for (const r of result) {
           const issues = r.issues || []
           if (issues.length) {
-            playerIssues.set(r.player.id || String(r.player.csvRowIndex || r.player.name || ''), issues)
+            const key = r.player.id || String(r.player.csvRowIndex || r.player.name || '')
+            playerIssues.set(key, issues)
             for (const it of issues) {
               if (it.severity === 'error') errorCount++
               else if (it.severity === 'warning') warningCount++
               else infoCount++
+              if (it.code === 'LOW_FGA') fgThresholdFailures.push({ key, value: it.value || null, message: it.message })
+              if (it.code === 'LOW_FTA') ftThresholdFailures.push({ key, value: it.value || null, message: it.message })
             }
           }
         }
@@ -52,8 +57,8 @@ export function createValidationReporter() {
           warningCount,
           infoCount,
           playerIssues,
-          fgThresholdFailures: [],
-          ftThresholdFailures: [],
+          fgThresholdFailures,
+          ftThresholdFailures,
           generatedAt: new Date(),
           csvFileName: meta.csvFileName || ''
         }

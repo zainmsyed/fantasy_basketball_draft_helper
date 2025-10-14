@@ -4,7 +4,7 @@ import { saveOverrides, loadOverrides } from '../src/utils/storage.js'
 describe('overrides storage', () => {
   const OLD = global.localStorage
   beforeEach(() => {
-    let store = {}
+    const store = {}
     global.localStorage = {
       getItem: (k) => (k in store ? store[k] : null),
       setItem: (k, v) => { store[k] = v },
