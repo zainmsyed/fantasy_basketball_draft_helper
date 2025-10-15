@@ -61,6 +61,8 @@ export function createDraftHelperStore() {
   lastMatchSummary: null,
   // current table view mode: 'rankings' (default sample data) or 'integrated'
   viewMode: 'rankings',
+  // track source of current integrated view: 'preview' or 'saved'
+  currentIntegratedSource: null,
   // last validation report generated after merge
   lastValidationReport: null,
   // debug helper: disabled by default; set true via console to reveal the widget
@@ -349,6 +351,7 @@ export function createDraftHelperStore() {
         if (this.table && this.table.replaceData) {
           this.table.replaceData(rows)
           this.viewMode = 'integrated'
+          this.currentIntegratedSource = source
         }
         return rows.length
       } catch (e) {
@@ -357,18 +360,19 @@ export function createDraftHelperStore() {
       }
     },
 
-    // Switch back to rankings (original dataset)
-    showRankingsView() {
-      try {
-        if (this.table && this.table.replaceData) {
-          this.table.replaceData(this.allPlayers || [])
-          this.viewMode = 'rankings'
-          // re-apply filters to the rankings table
-          this.applyFilters()
-        }
-      } catch (e) {
-        console.warn('showRankingsView failed', e)
+    // Save the current preview (when viewing preview in table)
+    async saveCurrentPreview() {
+      if (this.currentIntegratedSource !== 'preview' || !this.integratedPreview || !this.integratedPreview.length) {
+        return false
       }
+      // Temporarily set integratedPreview as lastIntegratedPlayers for confirmUpload
+      const temp = this.lastIntegratedPlayers
+      this.lastIntegratedPlayers = this.integratedPreview
+      const result = await this.confirmUpload()
+      if (!result) {
+        this.lastIntegratedPlayers = temp // restore if failed
+      }
+      return result
     },
 
     debounceSearch() {
@@ -810,6 +814,30 @@ export function createDraftHelperStore() {
         // load integrated list into main table view immediately
         try {
           this.applyIntegratedToTable('saved')
+        } catch (e) {}
+        // clean up upload UI after successful save
+        try {
+          this.uploadedCSV = null
+          this.csvColumns = []
+          this.columnMapper = createColumnMapper([])
+          this.mappingPreview = null
+          this.integratedPreview = []
+          this.lastMatchSummary = null
+          this.uploadedFileName = null
+          this.uploadedFileSize = 0
+          this.uploadedRowCount = 0
+          this.parseTimeMs = 0
+          this.previewRows = []
+          this.skippedRows = []
+          this.matching = false
+          this.fileWarnings = []
+          this.parseErrors = []
+          this.transformedUploadedPlayers = []
+          this.overrides = []
+          this.selectedPreviewIndexes = []
+          this.bulkAlternativeIndex = 0
+          this.overrideIndex = null
+          this.overrideChoice = null
         } catch (e) {}
         return true
       } catch (e) {

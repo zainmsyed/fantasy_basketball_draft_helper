@@ -31,6 +31,12 @@ describe('integration: merge -> upload -> overrides persistence', () => {
       { csvPlayer: { name: 'Jane Roe' }, historicalMatch: null, alternatives: [ { player: { id: 'h2', name: 'Hist2' }, confidence: 70 } ], confidence: 50 }
     ]
 
+    // apply a manual override on second entry before saving
+    store.openOverride(1)
+    store.setOverrideChoice(0)
+    const applied = store.applyOverride()
+    expect(applied).toBe(true)
+
     // perform confirmUpload -> should persist integrated players
     const ok = await store.confirmUpload()
     expect(ok).toBe(true)
@@ -40,12 +46,6 @@ describe('integration: merge -> upload -> overrides persistence', () => {
     const integrated = JSON.parse(raw)
     expect(Array.isArray(integrated)).toBe(true)
     expect(integrated.length).toBe(2)
-
-    // now apply a manual override on second entry and persist via applyOverride
-    store.openOverride(1)
-    store.setOverrideChoice(0)
-    const applied = store.applyOverride()
-    expect(applied).toBe(true)
 
     const overrides = loadOverrides()
     expect(Array.isArray(overrides)).toBe(true)

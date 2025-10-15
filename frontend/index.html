@@ -133,6 +133,9 @@
                   <span class="ml-2">Ambiguous: <span x-text="lastMatchSummary.ambiguous"></span></span>
                   <span class="ml-2">Unmatched: <span x-text="lastMatchSummary.unmatched"></span></span>
                   <span class="ml-4 badge" :class="viewMode==='integrated' ? 'badge-success' : 'badge-ghost'" x-text="viewMode==='integrated' ? 'Integrated view' : 'Rankings view'"></span>
+                  <template x-if="viewMode==='integrated' && currentIntegratedSource==='preview'">
+                    <button class="btn btn-sm btn-success ml-4" @click="saveCurrentPreview()">Save This Preview</button>
+                  </template>
                 </div>
               </div>
             </template>
