@@ -10,6 +10,7 @@ import { loadHistoricalStats, normalizeHistoricalList, saveIntegratedPlayers, sa
 import { mergeFromPreview } from '../../modules/data/data-merger.js'
 import { validatePlayers } from '../../modules/data/data-validator.js'
 import { transformRowToUploaded, validateMappingComplete } from '../../modules/data/csv-transformer.js'
+import { puntStrategyManager } from '../../modules/punt-strategy/index.js'
 
 /**
  * Creates the main Alpine.js store for the Basketball Draft Helper application.
@@ -152,6 +153,16 @@ export function createDraftHelperStore() {
         } catch {
           // swallow - error boundary best-effort
         }
+
+        // Initialize punt strategy manager
+        try {
+          await puntStrategyManager.initialize()
+        } catch (error) {
+          console.warn('Failed to initialize punt strategy manager:', error)
+        }
+
+        // Listen for strategy changes to update rankings
+        this.setupStrategyChangeListener()
       } catch (err) {
         console.error('init error', err)
         alert('Failed to initialize app')
@@ -1208,6 +1219,41 @@ export function createDraftHelperStore() {
       } catch (e) {
         this.errorMessage = `Debug action failed: ${String(e)}`
         return false
+      }
+    },
+
+    /**
+     * Set up event listener for punt strategy changes
+     * Updates table rankings when strategy changes
+     */
+    setupStrategyChangeListener() {
+      // Listen for strategy-changed events from punt strategy components
+      document.addEventListener('strategy-changed', (event) => {
+        try {
+          console.info('Strategy changed, updating rankings:', event.detail)
+          // Trigger ranking recalculation and table update
+          this.updateRankings()
+        } catch (error) {
+          console.error('Failed to update rankings after strategy change:', error)
+        }
+      })
+    },
+
+    /**
+     * Update rankings after strategy changes
+     */
+    updateRankings() {
+      try {
+        // If we have a table, trigger a data refresh
+        if (this.table && this.table.replaceData) {
+          // Get current data and re-sort (this will trigger ranking recalculation)
+          const currentData = this.table.getData()
+          if (currentData && currentData.length > 0) {
+            this.table.replaceData(currentData)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to update table rankings:', error)
       }
     },
   }
