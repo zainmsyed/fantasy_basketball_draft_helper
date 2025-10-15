@@ -13,3 +13,25 @@ body {
     'Helvetica Neue',
     Arial;
 }
+
+/* Smooth transitions for UI state changes */
+.card {
+  transition: all 0.3s ease;
+}
+
+.btn {
+  transition: all 0.2s ease;
+}
+
+.alert {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

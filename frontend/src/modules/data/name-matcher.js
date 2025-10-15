@@ -1,5 +1,6 @@
 import Fuse from 'fuse.js';
 import { normalizeName } from '../../utils/string-utils';
+import { MATCHING } from '../../config/constants';
 
 /**
  * Match CSV players to historical data
@@ -9,8 +10,8 @@ import { normalizeName } from '../../utils/string-utils';
  * @returns {Array}
  */
 export function matchPlayers(csvPlayers, historicalData, options = {}) {
-  const confidenceThreshold = options.confidenceThreshold ?? 85;
-  const useTeamTiebreaker = options.useTeamTiebreaker ?? true;
+  const confidenceThreshold = options.confidenceThreshold ?? MATCHING.CONFIDENCE_THRESHOLD;
+  const useTeamTiebreaker = options.useTeamTiebreaker ?? MATCHING.USE_TEAM_TIEBREAKER;
 
   // historicalData may be an object keyed by name or an array
   const historicalList = Array.isArray(historicalData) ? historicalData : Object.values(historicalData || {});

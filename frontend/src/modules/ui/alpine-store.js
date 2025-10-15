@@ -1,7 +1,7 @@
 import { loadSampleData } from '../../modules/data/sample-loader.js'
 import { createTableConfig } from '../../modules/table/tabulator-config.js'
 import { loadUIState, saveUIState } from '../../utils/storage.js'
-import { TIMING } from '../../config/constants.js'
+import { TIMING, UI } from '../../config/constants.js'
 import { isPersistentStorageAvailable } from '../../utils/storage.js'
 import { parseCSV } from '../../modules/data/csv-parser.js'
 import { createColumnMapper } from './column-mapper.js'
@@ -11,6 +11,12 @@ import { mergeFromPreview } from '../../modules/data/data-merger.js'
 import { validatePlayers } from '../../modules/data/data-validator.js'
 import { transformRowToUploaded, validateMappingComplete } from '../../modules/data/csv-transformer.js'
 
+/**
+ * Creates the main Alpine.js store for the Basketball Draft Helper application.
+ * Manages application state, UI interactions, data processing, and persistence.
+ *
+ * @returns {Object} Alpine.js reactive store object with methods and state
+ */
 export function createDraftHelperStore() {
   return {
     activeStatView: '2024-25',
@@ -86,6 +92,10 @@ export function createDraftHelperStore() {
     _filterRAF: null,
     _saveTimer: null,
 
+    /**
+     * Initializes the application store.
+     * Loads sample data, restores UI state, sets up table, and installs error boundaries.
+     */
     async init() {
       try {
         const saved = loadUIState()
@@ -427,6 +437,11 @@ export function createDraftHelperStore() {
     },
 
     // File input handler: reads file as text and delegates to loadCSVFromString
+    /**
+     * Handles CSV file upload event.
+     * Reads the file, parses CSV, validates, and prepares for mapping.
+     * @param {Event} ev - File input change event
+     */
     async handleFile(ev) {
       try {
         const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null
@@ -730,6 +745,11 @@ export function createDraftHelperStore() {
     },
 
     // Merge preview results and save integrated players
+    /**
+     * Merges preview data, validates, and saves integrated players to storage.
+     * Switches to integrated view and cleans up upload UI.
+     * @returns {boolean} Success status
+     */
     async confirmUpload() {
       // mappingPreview contains match results; ensure it's an array
       if (!this.mappingPreview || !Array.isArray(this.mappingPreview)) return false
@@ -809,7 +829,7 @@ export function createDraftHelperStore() {
         try {
           this.successMessage = `Integrated list saved: ${integrated.length} players`
           this.showSuccessToast = true
-          setTimeout(() => { try { this.showSuccessToast = false } catch {} }, 3500)
+          setTimeout(() => { try { this.showSuccessToast = false } catch {} }, UI.TOAST_DURATION_MS)
         } catch (e) {}
         // load integrated list into main table view immediately
         try {

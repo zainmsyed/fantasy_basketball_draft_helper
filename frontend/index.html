@@ -141,7 +141,7 @@
             </template>
 
             <!-- Success toast -->
-            <div x-show="showSuccessToast" class="toast toast-top toast-end" style="position:fixed;top:1rem;right:1rem;z-index:60">
+            <div x-show="showSuccessToast" class="toast toast-top toast-end" style="position:fixed;top:1rem;right:1rem;z-index:60" x-transition>
               <div class="alert alert-success">
                 <div>
                   <span x-text="successMessage"></span>
@@ -399,7 +399,7 @@
             </div>
           </template>
           <template x-if="errorMessage">
-            <div class="alert alert-error mb-4" role="status" aria-live="assertive">
+            <div class="alert alert-error mb-4" role="status" aria-live="assertive" x-transition>
               <div>
                 <span x-text="errorMessage"></span>
               </div>

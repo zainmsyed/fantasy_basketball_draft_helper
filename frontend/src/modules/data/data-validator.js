@@ -100,6 +100,12 @@ export function validateSinglePlayer(player) {
   return issues
 }
 
+/**
+ * Validates an array of integrated players and returns detailed validation report.
+ * Checks for missing required fields, data quality issues, and statistical thresholds.
+ * @param {Array} players - Array of integrated player objects
+ * @returns {Array} Array of validation results with issues by severity
+ */
 export function validatePlayers(players) {
   const results = []
   // precompute normalized name counts for duplicate detection

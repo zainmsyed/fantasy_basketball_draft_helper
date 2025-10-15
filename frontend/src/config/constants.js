@@ -23,6 +23,7 @@ export const UI = {
   TABLE_HEIGHT: '600px',
   STORAGE_KEY: 'draft_helper_state',
   STORAGE_TEST_KEY: '__draft_helper_test__',
+  TOAST_DURATION_MS: 3500
 }
 
 export const DATA_VIEWS = {
@@ -30,13 +31,7 @@ export const DATA_VIEWS = {
   PROJECTED_2025: '2025-26',
 }
 
-export const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C']
-
-export const REQUIRED_MAPPING_FIELDS = [
-  'playerNameColumn',
-  'teamColumn',
-  'positionColumn',
-  'rankColumn',
-  // common stat fields
-  'pts', 'ast', 'reb', 'fg_pct', 'ft_pct', 'threes', 'stl', 'blk', 'to'
-]
+export const MATCHING = {
+  CONFIDENCE_THRESHOLD: 85,
+  USE_TEAM_TIEBREAKER: true
+};
