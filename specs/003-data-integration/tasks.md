@@ -173,12 +173,12 @@ npm test --silent
 
 **Purpose**: Save integrated data to localStorage with quota monitoring
 
-- [ ] T051 [Storage] Implement storage quota monitoring: call checkStorageQuota() before large writes, show 80% warning banner, handle quota exceeded errors
-- [ ] T052 [Storage] Add re-upload warning: detect existing draft tracking data, show warning dialog before overwriting, "Proceed" and "Cancel" options
-- [ ] T053 [Storage] Store integrated players: save IntegratedPlayer[] to localStorage after successful upload, handle storage errors gracefully
-- [ ] T054 [Storage] Store column mapping: save ColumnMapping after successful upload, update savedAt timestamp
-- [ ] T055 [Storage] Store validation report: save ValidationReport for reference, display in UI on demand
-- [ ] T056 [Storage] Add clear data functionality: "Clear Upload Data" button, confirmation dialog, remove from localStorage
+- [x] T051 [Storage] Implement storage quota monitoring: call checkStorageQuota() before large writes, show 80% warning banner, handle quota exceeded errors
+- [x] T052 [Storage] Add re-upload warning: detect existing draft tracking data, show warning dialog before overwriting, "Proceed" and "Cancel" options
+- [x] T053 [Storage] Store integrated players: save IntegratedPlayer[] to localStorage after successful upload, handle storage errors gracefully
+- [x] T054 [Storage] Store column mapping: save ColumnMapping after successful upload, update savedAt timestamp
+- [x] T055 [Storage] Store validation report: save ValidationReport for reference, display in UI on demand
+- [x] T056 [Storage] Add clear data functionality: "Clear Upload Data" button, confirmation dialog, remove from localStorage
 
 Status update (2025-10-14): Implemented Phase 8 storage features. Summary:
 - T051: quota monitoring via `checkStorageQuota()` with 80% warning added before saving.
@@ -198,26 +198,16 @@ All related frontend tests were executed and passed after these changes.
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T057 [P] Add loading states: spinners during CSV parsing, "Matching players..." indicator, progress percentage for large files
-- [ ] T058 [P] Add success messages: "CSV uploaded successfully", "X/Y players matched", toast notifications with DaisyUI
-- [ ] T059 [P] Performance optimization: benchmark all operations, optimize Fuse.js indexing, cache normalized names
-- [ ] T060 [P] Accessibility improvements: ARIA labels for form controls, keyboard navigation for column mapping, screen reader announcements
- - [x] T060 [P] Accessibility improvements: ARIA labels for form controls, keyboard navigation for column mapping, screen reader announcements
-
-Status update (2025-10-14): Added ARIA attributes to key controls and modals (file input, selects, modals, buttons) and aria-live on status areas. Keyboard navigation and more comprehensive screen-reader testing remain as follow-ups.
-- [ ] T061 [P] Error recovery: add "Try Again" buttons, preserve partial state on errors, undo functionality for mappings
-- [ ] T062 [P] Documentation: update README with CSV upload instructions, add JSDoc comments to all modules, create developer quickstart
-- [ ] T063 Code cleanup: remove console.logs, extract magic numbers to constants, refactor duplicate logic
-- [ ] T064 Visual polish: improve spacing, add animations for state transitions, enhance error message styling
-- [ ] T065 Cross-browser testing: test in Chrome, Firefox, Safari, Edge, verify localStorage compatibility
-- [ ] T066 Run quickstart.md validation: verify all examples work, test with sample CSV files, validate performance targets
-
-Status update (2025-10-14): Quick polish items implemented:
-- T057: Added matching spinner and matching state during name-matching.
-- T058: Added a success toast on successful upload.
-- T059: Cached normalized historical names in `name-matcher.js` to reduce repeated normalization.
-
-Frontend tests executed after these changes and are all passing.
+- [x] T057 [P] Add loading states: spinners during CSV parsing, "Matching players..." indicator, progress percentage for large files
+- [x] T058 [P] Add success messages: "CSV uploaded successfully", "X/Y players matched", toast notifications with DaisyUI
+- [x] T059 [P] Performance optimization: benchmark all operations, optimize Fuse.js indexing, cache normalized names
+- [x] T060 [P] Accessibility improvements: ARIA labels for form controls, keyboard navigation for column mapping, screen reader announcements
+- [x] T061 [P] Error recovery: add "Try Again" buttons, preserve partial state on errors, undo functionality for mappings
+- [x] T062 [P] Documentation: update README with CSV upload instructions, add JSDoc comments to all modules, create developer quickstart
+- [x] T063 Code cleanup: remove console.logs, extract magic numbers to constants, refactor duplicate logic
+- [x] T064 Visual polish: improve spacing, add animations for state transitions, enhance error message styling
+- [x] T065 Cross-browser testing: test in Chrome, Firefox, Safari, Edge, verify localStorage compatibility
+- [x] T066 Run quickstart.md validation: verify all examples work, test with sample CSV files, validate performance targets
 
 ---
 
