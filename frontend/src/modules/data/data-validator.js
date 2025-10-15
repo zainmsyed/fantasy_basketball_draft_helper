@@ -10,12 +10,18 @@ function missingName(player) {
 }
 
 function missingPosition(player) {
-  return !player || !player.position || player.position.trim() === ''
+  if (!player) return true
+  // accept either a string position or a non-empty positions array
+  const hasString = typeof player.position === 'string' && player.position.trim() !== ''
+  const hasArray = Array.isArray(player.positions) && player.positions.length > 0
+  return !(hasString || hasArray)
 }
 
 export function countNonNullStats(player) {
-  if (!player || !player.projectedStats) return 0
-  return Object.values(player.projectedStats).filter(v => v !== null && v !== undefined && v !== '').length
+  if (!player) return 0
+  const stats = player.projectedStats || player.historicalStats || null
+  if (!stats) return 0
+  return Object.values(stats).filter(v => v !== null && v !== undefined && v !== '').length
 }
 
 function toNumber(val, fallback = null) {

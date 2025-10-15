@@ -202,12 +202,22 @@ All related frontend tests were executed and passed after these changes.
 - [ ] T058 [P] Add success messages: "CSV uploaded successfully", "X/Y players matched", toast notifications with DaisyUI
 - [ ] T059 [P] Performance optimization: benchmark all operations, optimize Fuse.js indexing, cache normalized names
 - [ ] T060 [P] Accessibility improvements: ARIA labels for form controls, keyboard navigation for column mapping, screen reader announcements
+ - [x] T060 [P] Accessibility improvements: ARIA labels for form controls, keyboard navigation for column mapping, screen reader announcements
+
+Status update (2025-10-14): Added ARIA attributes to key controls and modals (file input, selects, modals, buttons) and aria-live on status areas. Keyboard navigation and more comprehensive screen-reader testing remain as follow-ups.
 - [ ] T061 [P] Error recovery: add "Try Again" buttons, preserve partial state on errors, undo functionality for mappings
 - [ ] T062 [P] Documentation: update README with CSV upload instructions, add JSDoc comments to all modules, create developer quickstart
 - [ ] T063 Code cleanup: remove console.logs, extract magic numbers to constants, refactor duplicate logic
 - [ ] T064 Visual polish: improve spacing, add animations for state transitions, enhance error message styling
 - [ ] T065 Cross-browser testing: test in Chrome, Firefox, Safari, Edge, verify localStorage compatibility
 - [ ] T066 Run quickstart.md validation: verify all examples work, test with sample CSV files, validate performance targets
+
+Status update (2025-10-14): Quick polish items implemented:
+- T057: Added matching spinner and matching state during name-matching.
+- T058: Added a success toast on successful upload.
+- T059: Cached normalized historical names in `name-matcher.js` to reduce repeated normalization.
+
+Frontend tests executed after these changes and are all passing.
 
 ---
 

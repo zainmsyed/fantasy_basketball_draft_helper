@@ -10,6 +10,7 @@ export function transformRowToUploaded(row = {}, mapping = {}) {
   const nameKey = mapping.playerNameColumn || Object.keys(row)[0]
   const teamKey = mapping.teamColumn
   const posKey = mapping.positionColumn
+  const rankKey = mapping.rankColumn
 
   const name = row[nameKey]
   const team = teamKey ? row[teamKey] : undefined
@@ -40,6 +41,7 @@ export function transformRowToUploaded(row = {}, mapping = {}) {
     team: team || null,
     positions,
     position: positionRaw,
+    expertRank: rankKey ? (row[rankKey] != null ? Number(row[rankKey]) : null) : null,
     projectedStats,
     // if parser included a row index, keep it for reporting
     csvRowIndex: row.__rowNum__ != null ? row.__rowNum__ : (row._rowIndex != null ? row._rowIndex : null)

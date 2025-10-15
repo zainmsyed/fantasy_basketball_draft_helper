@@ -6,7 +6,7 @@ import { isPersistentStorageAvailable } from '../../utils/storage.js'
 import { parseCSV } from '../../modules/data/csv-parser.js'
 import { createColumnMapper } from './column-mapper.js'
 import { matchPlayers } from '../../modules/data/name-matcher.js'
-import { loadHistoricalStats, saveIntegratedPlayers, saveOverrides, loadOverrides, loadIntegratedPlayers, saveValidationReport, clearUploadData, checkStorageQuota } from '../../utils/storage.js'
+import { loadHistoricalStats, normalizeHistoricalList, saveIntegratedPlayers, saveOverrides, loadOverrides, loadIntegratedPlayers, saveValidationReport, clearUploadData, checkStorageQuota } from '../../utils/storage.js'
 import { mergeFromPreview } from '../../modules/data/data-merger.js'
 import { validatePlayers } from '../../modules/data/data-validator.js'
 import { transformRowToUploaded, validateMappingComplete } from '../../modules/data/csv-transformer.js'
@@ -26,11 +26,16 @@ export function createDraftHelperStore() {
     storageAvailable: true,
     // global error state for user-friendly error boundaries
     errorMessage: null,
+  // context for the current error (parse|save|null) so UI can show contextual actions
+  errorContext: null,
     loading: false,
+  // last raw CSV text read from file (used to retry parsing without re-upload)
+  lastCSVText: null,
   // CSV upload state
   uploadedCSV: null,
   csvColumns: [],
-  columnMapper: null,
+  // ensure columnMapper is always an object to avoid Alpine reading null.mapping
+  columnMapper: createColumnMapper([]),
   showLargeFileModal: false,
   mappingPreview: null,
   // preview / metadata
@@ -41,12 +46,25 @@ export function createDraftHelperStore() {
   previewRows: [],
   // rows skipped due to blank player names (store row numbers)
   skippedRows: [],
+  // matching indicator (shows spinner when running name matching)
+  matching: false,
+  // success toast
+  showSuccessToast: false,
+  successMessage: '',
   fileWarnings: [],
   parseErrors: [],
   // last integrated players (in-memory) for preview
   lastIntegratedPlayers: [],
+  // integrated preview derived from mappingPreview (not yet saved)
+  integratedPreview: [],
+  // last match summary counts for quick feedback
+  lastMatchSummary: null,
+  // current table view mode: 'rankings' (default sample data) or 'integrated'
+  viewMode: 'rankings',
   // last validation report generated after merge
   lastValidationReport: null,
+  // debug helper: disabled by default; set true via console to reveal the widget
+  debugReady: false,
   // UI modal state for validation confirmation
   showValidationModal: false,
   // re-upload overwrite confirmation modal
@@ -284,6 +302,75 @@ export function createDraftHelperStore() {
       }
     },
 
+    // Convert integrated players into table rows expected by Tabulator config
+    _toTableRows(integrated = []) {
+      const rows = []
+      for (const p of integrated) {
+        try {
+          const hs = p && p.historicalStats ? p.historicalStats : {}
+          const stats = hs || {}
+          const positions = Array.isArray(p.positions) ? p.positions : (typeof p.position === 'string' && p.position ? p.position.split('/').map(s=>s.trim()) : [])
+          const posMap = {}
+          for (const x of positions) posMap[x] = true
+          rows.push({
+            id: p.id,
+            name: p.name || '',
+            team: p.team || null,
+            _pos_display: positions.join('/'),
+            _name_lc: (p.name || '').toLowerCase(),
+            _pos_map: posMap,
+            gp: Number(stats.gp || 0),
+            pts: Number(stats.pts || 0),
+            ast: Number(stats.ast || 0),
+            reb: Number(stats.reb || 0),
+            threes: Number(stats.threes || stats.fg3m || 0),
+            fg_pct: Number(stats.fg_pct != null ? stats.fg_pct : 0),
+            ft_pct: Number(stats.ft_pct != null ? stats.ft_pct : 0),
+            stl: Number(stats.stl || 0),
+            blk: Number(stats.blk || 0),
+            to: Number(stats.to || stats.tov || 0),
+            expert_rank: p.expertRank != null ? Number(p.expertRank) : null,
+            algo_rank: hs && hs.algo_rank != null ? Number(hs.algo_rank) : null,
+            hasHistoricalData: !!p.hasHistoricalData,
+            matchConfidence: typeof p.matchConfidence === 'number' ? p.matchConfidence : 0,
+          })
+        } catch (e) {
+          continue
+        }
+      }
+      return rows
+    },
+
+    // Replace table data with integrated preview (unsaved) or saved integrated list
+    applyIntegratedToTable(source = 'saved') {
+      try {
+        const list = source === 'preview' ? (this.integratedPreview || []) : (this.lastIntegratedPlayers || [])
+        const rows = this._toTableRows(list)
+        if (this.table && this.table.replaceData) {
+          this.table.replaceData(rows)
+          this.viewMode = 'integrated'
+        }
+        return rows.length
+      } catch (e) {
+        console.warn('applyIntegratedToTable failed', e)
+        return 0
+      }
+    },
+
+    // Switch back to rankings (original dataset)
+    showRankingsView() {
+      try {
+        if (this.table && this.table.replaceData) {
+          this.table.replaceData(this.allPlayers || [])
+          this.viewMode = 'rankings'
+          // re-apply filters to the rankings table
+          this.applyFilters()
+        }
+      } catch (e) {
+        console.warn('showRankingsView failed', e)
+      }
+    },
+
     debounceSearch() {
       // shorter debounce to keep UX snappy but avoid excessive redraws
       clearTimeout(this.searchTimeout)
@@ -353,7 +440,7 @@ export function createDraftHelperStore() {
           this.fileWarnings.push('File exceeds 5MB recommended limit')
         }
 
-        this.loading = true
+  this.loading = true
         const t0 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
         // Attempt robust decoding: try UTF-8, fallback to windows-1252 if replacement chars detected
         const arrayBuffer = await file.arrayBuffer()
@@ -390,10 +477,14 @@ export function createDraftHelperStore() {
         }
         const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
         this.parseTimeMs = Math.max(0, t1 - t0)
-        await this.loadCSVFromString(text)
+  // store last raw CSV so user can retry parse without re-uploading
+  try { this.lastCSVText = text } catch (e) {}
+  await this.loadCSVFromString(text)
       } catch (err) {
         console.error('file read error', err)
         this.errorMessage = `Failed to read CSV: ${String(err)}`
+        // indicate parse-related error context so UI can offer retry
+        try { this.errorContext = 'parse' } catch (e) {}
       } finally {
         this.loading = false
       }
@@ -445,18 +536,18 @@ export function createDraftHelperStore() {
         await this.columnMapper.init()
         // run an initial preview if historical data is available
         try {
-          const hist = await loadHistoricalStats()
-          // create simple csvPlayers array for matching using detected column names
-          // Build players list for matching; include row index and skip blank-name rows
+          const histRaw = await loadHistoricalStats()
+          const hist = normalizeHistoricalList(histRaw)
+          // create csvPlayer objects for matching using transformRowToUploaded to include
+          // positions and projectedStats so validation has meaningful data
           this.skippedRows = []
           const players = (res.data || []).map((r, idx) => {
-            const name = this.columnMapper.mapping.playerNameColumn ? r[this.columnMapper.mapping.playerNameColumn] : r[Object.keys(r)[0]]
-            const team = this.columnMapper.mapping.teamColumn ? r[this.columnMapper.mapping.teamColumn] : undefined
-            const rowIndex = r.__rowNum__ != null ? r.__rowNum__ : (r._rowIndex != null ? r._rowIndex : idx + 1)
-            return { name: name, team: team, csvRowIndex: rowIndex }
+            const transformed = transformRowToUploaded(r, this.columnMapper ? this.columnMapper.mapping : {})
+            // ensure csvRowIndex present
+            if (!transformed.csvRowIndex) transformed.csvRowIndex = r.__rowNum__ != null ? r.__rowNum__ : (r._rowIndex != null ? r._rowIndex : idx + 1)
+            return transformed
           }).filter(p => {
             if (!p || !p.name || String(p.name).trim() === '') {
-              // record skipped row number
               try { this.skippedRows.push(p && p.csvRowIndex ? p.csvRowIndex : null) } catch (e) {}
               return false
             }
@@ -465,7 +556,29 @@ export function createDraftHelperStore() {
           if (this.skippedRows && this.skippedRows.length) {
             this.fileWarnings.push(`Skipped ${this.skippedRows.length} row(s) with blank player name(s): ${this.skippedRows.filter(Boolean).join(', ')}`)
           }
-          this.mappingPreview = matchPlayers(players, hist)
+          try {
+            this.matching = true
+            this.mappingPreview = matchPlayers(players, hist)
+          } finally {
+            this.matching = false
+          }
+          // build integrated preview for immediate visibility
+          try {
+            this.integratedPreview = mergeFromPreview(this.mappingPreview || [])
+          } catch (e) {
+            this.integratedPreview = []
+          }
+          // compute match summary and log for feedback
+          try {
+            const total = Array.isArray(this.mappingPreview) ? this.mappingPreview.length : 0
+            const matched = total ? this.mappingPreview.filter(x => x && x.historicalMatch).length : 0
+            const ambiguous = total ? this.mappingPreview.filter(x => x && x.matchType === 'ambiguous').length : 0
+            const unmatched = Math.max(0, total - matched)
+            this.lastMatchSummary = { total, matched, ambiguous, unmatched, at: new Date() }
+            try { console.info('[match] preview', this.lastMatchSummary) } catch {}
+          } catch (e) {
+            this.lastMatchSummary = null
+          }
           // apply any saved manual overrides to the preview
           try {
             const saved = loadOverrides() || []
@@ -482,6 +595,9 @@ export function createDraftHelperStore() {
       } catch (err) {
         console.error('parseCSV error', err)
         this.errorMessage = `CSV parse failed: ${String(err)}`
+        // remember last input so user can retry
+        try { this.lastCSVText = csvText } catch (e) {}
+        try { this.errorContext = 'parse' } catch (e) {}
       }
     },
 
@@ -516,13 +632,13 @@ export function createDraftHelperStore() {
       if (!this.uploadedCSV || !this.columnMapper) return
       try {
         const res = this.uploadedCSV
-        // Build players list for matching; include row index and skip blank-name rows
+        try { console.info('[match] starting on-demand preview for', (res.data || []).length, 'rows') } catch {}
+        // Build players list for matching using transformRowToUploaded so position/stats present
         this.skippedRows = []
         const players = (res.data || []).map((r, idx) => {
-          const name = this.columnMapper.mapping.playerNameColumn ? r[this.columnMapper.mapping.playerNameColumn] : r[Object.keys(r)[0]]
-          const team = this.columnMapper.mapping.teamColumn ? r[this.columnMapper.mapping.teamColumn] : undefined
-          const rowIndex = r.__rowNum__ != null ? r.__rowNum__ : (r._rowIndex != null ? r._rowIndex : idx + 1)
-          return { name: name, team: team, csvRowIndex: rowIndex }
+          const transformed = transformRowToUploaded(r, this.columnMapper ? this.columnMapper.mapping : {})
+          if (!transformed.csvRowIndex) transformed.csvRowIndex = r.__rowNum__ != null ? r.__rowNum__ : (r._rowIndex != null ? r._rowIndex : idx + 1)
+          return transformed
         }).filter(p => {
           if (!p || !p.name || String(p.name).trim() === '') {
             try { this.skippedRows.push(p && p.csvRowIndex ? p.csvRowIndex : null) } catch (e) {}
@@ -530,11 +646,33 @@ export function createDraftHelperStore() {
           }
           return true
         })
-        const hist = await loadHistoricalStats()
+  const histRaw = await loadHistoricalStats()
+  const hist = normalizeHistoricalList(histRaw)
         if (this.skippedRows && this.skippedRows.length) {
           this.fileWarnings.push(`Skipped ${this.skippedRows.length} row(s) with blank player name(s): ${this.skippedRows.filter(Boolean).join(', ')}`)
         }
-        this.mappingPreview = matchPlayers(players, hist)
+        try {
+          this.matching = true
+          this.mappingPreview = matchPlayers(players, hist)
+        } finally {
+          this.matching = false
+        }
+        try {
+          this.integratedPreview = mergeFromPreview(this.mappingPreview || [])
+        } catch (e) {
+          this.integratedPreview = []
+        }
+        // compute match summary and log for feedback
+        try {
+          const total = Array.isArray(this.mappingPreview) ? this.mappingPreview.length : 0
+          const matched = total ? this.mappingPreview.filter(x => x && x.historicalMatch).length : 0
+          const ambiguous = total ? this.mappingPreview.filter(x => x && x.matchType === 'ambiguous').length : 0
+          const unmatched = Math.max(0, total - matched)
+          this.lastMatchSummary = { total, matched, ambiguous, unmatched, at: new Date() }
+          try { console.info('[match] on-demand', this.lastMatchSummary) } catch {}
+        } catch (e) {
+          this.lastMatchSummary = null
+        }
         // apply saved overrides if present
         try {
           const saved = loadOverrides() || []
@@ -663,10 +801,67 @@ export function createDraftHelperStore() {
         await saveIntegratedPlayers(integrated)
         // also persist validation report if available
         try { if (this.lastValidationReport) saveValidationReport(this.lastValidationReport) } catch (e) {}
+        // show a brief success toast
+        try {
+          this.successMessage = `Integrated list saved: ${integrated.length} players`
+          this.showSuccessToast = true
+          setTimeout(() => { try { this.showSuccessToast = false } catch {} }, 3500)
+        } catch (e) {}
+        // load integrated list into main table view immediately
+        try {
+          this.applyIntegratedToTable('saved')
+        } catch (e) {}
         return true
       } catch (e) {
         console.error('confirmUpload failed', e)
         this.errorMessage = `Failed to save integrated players: ${String(e)}`
+        try { this.errorContext = 'save' } catch (err) {}
+        return false
+      }
+    },
+
+    // Retry operations for recoverable errors
+    async retryParse() {
+      try {
+        if (!this.lastCSVText) return false
+        this.errorMessage = null
+        this.errorContext = null
+        // re-run parse using last saved CSV text
+        await this.loadCSVFromString(this.lastCSVText)
+        return true
+      } catch (e) {
+        this.errorMessage = `Retry parse failed: ${String(e)}`
+        this.errorContext = 'parse'
+        return false
+      }
+    },
+
+    async retrySave() {
+      try {
+        this.errorMessage = null
+        this.errorContext = null
+        // if we have lastIntegratedPlayers, try to persist them again
+        if (this.lastIntegratedPlayers && this.lastIntegratedPlayers.length) {
+          return await this.confirmUpload()
+        }
+        // otherwise, attempt full confirm (will regenerate integrated list)
+        return await this.confirmUpload()
+      } catch (e) {
+        this.errorMessage = `Retry save failed: ${String(e)}`
+        this.errorContext = 'save'
+        return false
+      }
+    },
+
+    // Clear persisted upload data then try saving again (helpful when quota is full)
+    async retrySaveAfterClear() {
+      try {
+        // attempt to clear persisted upload data
+        try { clearUploadData() } catch (e) { /* ignore */ }
+        return await this.retrySave()
+      } catch (e) {
+        this.errorMessage = `Retry after clear failed: ${String(e)}`
+        this.errorContext = 'save'
         return false
       }
     },
@@ -942,6 +1137,30 @@ export function createDraftHelperStore() {
         sortField,
         sortDirection,
       })
+    },
+
+    // temporary debug helper: run a named action on the store from the UI
+    async runDebugAction(action) {
+      try {
+        if (!action) return false
+        switch (action) {
+          case 'applyPreview':
+            await this.applyMappingPreview()
+            return true
+          case 'saveMapping':
+            return this.saveMapping()
+          case 'confirmUpload':
+            return await this.uiConfirmUpload()
+          case 'transform':
+            this.transformUploadedRows()
+            return true
+          default:
+            return false
+        }
+      } catch (e) {
+        this.errorMessage = `Debug action failed: ${String(e)}`
+        return false
+      }
     },
   }
 }

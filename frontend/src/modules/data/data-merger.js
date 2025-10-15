@@ -16,13 +16,16 @@ export function mergeFromPreview(previewResults = []) {
     else if (Array.isArray(csv.position)) positions = csv.position
     else if (typeof csv.position === 'string' && csv.position.length) positions = csv.position.split('/').map(s => s.trim())
 
-    const projectedStats = csv.projectedStats || csv.stats || {}
+  const projectedStats = csv.projectedStats || csv.stats || {}
 
     const integrated = {
       id: uuidv4(),
       name: csv.name || (csv.playerName || ''),
       team: csv.team || null,
       positions,
+  // keep original single position string too when available for validator compatibility
+  position: csv.position || (Array.isArray(positions) && positions.length ? positions.join('/') : ''),
+  expertRank: csv.expertRank != null ? csv.expertRank : (csv.rank != null ? csv.rank : null),
       projectedStats,
       // include original csv row index when available for error reporting
       csvRowIndex: csv.csvRowIndex != null ? csv.csvRowIndex : (csv.rowIndex != null ? csv.rowIndex : null),

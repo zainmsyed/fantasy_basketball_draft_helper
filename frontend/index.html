@@ -12,14 +12,14 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="form-control">
             <label class="label"><span class="label-text">CSV Upload (Phase 2)</span></label>
-            <input type="file" @change="handleFile($event)" accept="text/csv" class="file-input file-input-bordered" />
+            <input aria-label="Upload CSV file" type="file" @change="handleFile($event)" accept="text/csv" class="file-input file-input-bordered" />
             <p class="text-xs text-neutral mt-2">Upload a CSV exported from your roster or draftboard. We'll attempt to auto-detect columns.</p>
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text">Stats View</span></label>
             <div class="flex items-center gap-2">
-              <select x-model="activeStatView" @change="changeStatView" class="select select-bordered">
+              <select aria-label="Select stats view" x-model="activeStatView" @change="changeStatView" class="select select-bordered">
               <option value="2024-25">2024-25 Actual</option>
               <option value="2025-26">2025-26 Projected</option>
             </select>
@@ -65,7 +65,7 @@
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div class="form-control">
               <label class="label"><span class="label-text">Player Name Column</span></label>
-              <select class="select select-bordered" x-model="columnMapper.mapping.playerNameColumn">
+              <select aria-label="Player name column" class="select select-bordered" x-model="columnMapper.mapping.playerNameColumn">
                 <option value="">-- select --</option>
                 <template x-for="c in csvColumns" :key="c">
                   <option x-text="c" :value="c"></option>
@@ -75,7 +75,7 @@
 
             <div class="form-control">
               <label class="label"><span class="label-text">Team Column</span></label>
-              <select class="select select-bordered" x-model="columnMapper.mapping.teamColumn">
+              <select aria-label="Team column" class="select select-bordered" x-model="columnMapper.mapping.teamColumn">
                 <option value="">-- select --</option>
                 <template x-for="c in csvColumns" :key="c">
                   <option x-text="c" :value="c"></option>
@@ -85,7 +85,7 @@
 
             <div class="form-control">
               <label class="label"><span class="label-text">Position Column</span></label>
-              <select class="select select-bordered" x-model="columnMapper.mapping.positionColumn">
+              <select aria-label="Position column" class="select select-bordered" x-model="columnMapper.mapping.positionColumn">
                 <option value="">-- select --</option>
                 <template x-for="c in csvColumns" :key="c">
                   <option x-text="c" :value="c"></option>
@@ -95,7 +95,7 @@
 
             <div class="form-control">
               <label class="label"><span class="label-text">Rank Column</span></label>
-              <select class="select select-bordered" x-model="columnMapper.mapping.rankColumn">
+              <select aria-label="Rank column" class="select select-bordered" x-model="columnMapper.mapping.rankColumn">
                 <option value="">-- select --</option>
                 <template x-for="c in csvColumns" :key="c">
                   <option x-text="c" :value="c"></option>
@@ -105,15 +105,49 @@
           </div>
 
             <div class="mt-4 flex gap-2">
-            <button class="btn btn-primary" @click="saveMapping()">Save mapping</button>
-            <button class="btn btn-ghost" @click="applyMappingPreview()">Preview matches</button>
-            <button class="btn btn-success" @click="uiConfirmUpload()" :disabled="!mappingComplete()">Confirm & Upload</button>
-            <button class="btn btn-outline" @click="transformUploadedRows()">Transform rows</button>
+            <button class="btn" @click="saveMapping()">Save Mapping</button>
+            <button class="btn btn-primary" @click="applyMappingPreview()">Match Players</button>
+            <button class="btn btn-success" @click="uiConfirmUpload()" :disabled="!mappingComplete()">Save Integrated List</button>
+            <button class="btn btn-outline" @click="transformUploadedRows()">Preview Rows</button>
             <button class="btn btn-sm btn-error ml-2" @click="openClearUploadConfirm()">Clear Upload Data</button>
+            <div class="ml-4 flex items-center gap-2">
+              <button class="btn btn-sm" :class="viewMode==='rankings'?'btn-active':''" @click="showRankingsView()">Show Rankings</button>
+              <button class="btn btn-sm" :class="viewMode==='integrated'?'btn-active':''" @click="applyIntegratedToTable('saved')" :disabled="!(lastIntegratedPlayers && lastIntegratedPlayers.length)">Show Integrated</button>
+              <button class="btn btn-sm" @click="applyIntegratedToTable('preview')" :disabled="!(integratedPreview && integratedPreview.length)">Load Preview In Table</button>
+            </div>
             <template x-if="mappingPreview">
               <div class="badge badge-outline">Matches: <span x-text="mappingPreview.length"></span></div>
             </template>
+            <div class="ml-4" x-show="matching" style="display:inline-block">
+              <svg class="animate-spin h-5 w-5 text-primary inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span class="text-sm ml-2">Matching players…</span>
+            </div>
+
+            <template x-if="lastMatchSummary">
+              <div class="alert alert-info ml-4">
+                <div class="text-xs">
+                  <strong>Matched</strong> <span x-text="lastMatchSummary.matched"></span>/<span x-text="lastMatchSummary.total"></span>
+                  <span class="ml-2">Ambiguous: <span x-text="lastMatchSummary.ambiguous"></span></span>
+                  <span class="ml-2">Unmatched: <span x-text="lastMatchSummary.unmatched"></span></span>
+                  <span class="ml-4 badge" :class="viewMode==='integrated' ? 'badge-success' : 'badge-ghost'" x-text="viewMode==='integrated' ? 'Integrated view' : 'Rankings view'"></span>
+                </div>
+              </div>
+            </template>
+
+            <!-- Success toast -->
+            <div x-show="showSuccessToast" class="toast toast-top toast-end" style="position:fixed;top:1rem;right:1rem;z-index:60">
+              <div class="alert alert-success">
+                <div>
+                  <span x-text="successMessage"></span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          
 
           <!-- Re-upload confirmation modal (overwrite existing saved draft) -->
           <template x-if="showReuploadModal">
@@ -174,18 +208,18 @@
           </template>
           <!-- Validation modal -->
           <template x-if="showValidationModal">
-            <div class="fixed inset-0 flex items-center justify-center z-50">
+            <div role="dialog" aria-modal="true" aria-labelledby="validation-modal-title" class="fixed inset-0 flex items-center justify-center z-50">
               <div class="absolute inset-0 bg-black opacity-40"></div>
               <div class="bg-base-100 rounded shadow-lg p-6 z-10 w-11/12 md:w-1/2">
-                <h3 class="text-lg font-bold">Validation Report</h3>
+                <h3 id="validation-modal-title" class="text-lg font-bold">Validation Report</h3>
                 <div class="mt-4">
                   <p>Total players: <strong x-text="lastValidationReport && lastValidationReport.totalPlayers"></strong></p>
                   <p class="text-error" x-show="lastValidationReport && lastValidationReport.errorCount > 0">Errors: <strong x-text="lastValidationReport && lastValidationReport.errorCount"></strong></p>
                   <p class="text-warning" x-show="lastValidationReport && lastValidationReport.warningCount > 0">Warnings: <strong x-text="lastValidationReport && lastValidationReport.warningCount"></strong></p>
                 </div>
                 <div class="mt-4 flex gap-2 justify-end">
-                  <button class="btn btn-ghost" @click="showValidationModal = false">Cancel</button>
-                  <button class="btn btn-primary" @click="proceedAfterValidationModal()">Proceed anyway</button>
+                  <button aria-label="Cancel validation" class="btn btn-ghost" @click="showValidationModal = false">Cancel</button>
+                  <button aria-label="Proceed despite warnings" class="btn btn-primary" @click="proceedAfterValidationModal()">Proceed anyway</button>
                 </div>
               </div>
             </div>
@@ -193,18 +227,18 @@
 
           <!-- Large file performance modal -->
           <template x-if="showLargeFileModal">
-            <div class="fixed inset-0 flex items-center justify-center z-50">
+            <div role="dialog" aria-modal="true" aria-labelledby="large-file-modal-title" class="fixed inset-0 flex items-center justify-center z-50">
               <div class="absolute inset-0 bg-black opacity-40"></div>
               <div class="bg-base-100 rounded shadow-lg p-6 z-10 w-11/12 md:w-1/2">
-                <h3 class="text-lg font-bold">Large file detected</h3>
+                <h3 id="large-file-modal-title" class="text-lg font-bold">Large file detected</h3>
                 <div class="mt-4">
                   <p>We detected <strong x-text="uploadedRowCount"></strong> rows in your CSV. Processing very large files can be slow in the browser and may impact responsiveness.</p>
                   <p class="mt-2">Recommended: trim to the top 200–250 players for best performance during matching and validation.</p>
                 </div>
                 <div class="mt-4 flex gap-2 justify-end">
-                  <button class="btn btn-ghost" @click="showLargeFileModal = false">Continue without trimming</button>
-                  <button class="btn btn-outline" @click="trimToTopN(250); showLargeFileModal = false">Trim to top 250</button>
-                  <button class="btn btn-primary" @click="trimToTopN(200); showLargeFileModal = false">Trim to top 200</button>
+                  <button aria-label="Continue without trimming" class="btn btn-ghost" @click="showLargeFileModal = false">Continue without trimming</button>
+                  <button aria-label="Trim to top 250" class="btn btn-outline" @click="trimToTopN(250); showLargeFileModal = false">Trim to top 250</button>
+                  <button aria-label="Trim to top 200" class="btn btn-primary" @click="trimToTopN(200); showLargeFileModal = false">Trim to top 200</button>
                 </div>
               </div>
             </div>
@@ -319,6 +353,36 @@
               </ul>
             </div>
           </template>
+
+          <template x-if="integratedPreview && integratedPreview.length">
+            <div class="mt-6">
+              <h4 class="text-sm font-medium">Integrated Preview (first 10)</h4>
+              <div class="overflow-auto mt-2">
+                <table class="table table-compact w-full">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Team</th>
+                      <th>Pos</th>
+                      <th>Expert Rank</th>
+                      <th>Match%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="p in integratedPreview.slice(0,10)" :key="p.id">
+                      <tr>
+                        <td x-text="p.name"></td>
+                        <td x-text="p.team"></td>
+                        <td x-text="(Array.isArray(p.positions) ? p.positions.join('/') : (p.position || ''))"></td>
+                        <td x-text="p.expertRank ?? ''"></td>
+                        <td x-text="p.matchConfidence + '%' "></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
       <div class="card bg-base-100 shadow-lg">
@@ -332,12 +396,27 @@
             </div>
           </template>
           <template x-if="errorMessage">
-            <div class="alert alert-error mb-4">
+            <div class="alert alert-error mb-4" role="status" aria-live="assertive">
               <div>
                 <span x-text="errorMessage"></span>
               </div>
               <div class="flex-none">
                 <button @click="clearError()" class="btn btn-sm btn-ghost">Dismiss</button>
+              </div>
+              <div class="w-full mt-2">
+                <template x-if="errorContext === 'parse'">
+                  <div class="flex gap-2">
+                    <button class="btn btn-sm btn-primary" @click="retryParse()">Try again (parse)</button>
+                    <span class="text-xs self-center text-neutral">If the upload failed to decode, reselect the CSV or try again.</span>
+                  </div>
+                </template>
+                <template x-if="errorContext === 'save'">
+                  <div class="flex gap-2">
+                    <button class="btn btn-sm btn-primary" @click="retrySave()">Try again (save)</button>
+                    <button class="btn btn-sm btn-outline" @click="retrySaveAfterClear()">Clear saved data and retry</button>
+                    <span class="text-xs self-center text-neutral">If storage quota is full, clearing saved drafts may help.</span>
+                  </div>
+                </template>
               </div>
             </div>
           </template>

@@ -15,10 +15,23 @@ export function matchPlayers(csvPlayers, historicalData, options = {}) {
   // historicalData may be an object keyed by name or an array
   const historicalList = Array.isArray(historicalData) ? historicalData : Object.values(historicalData || {});
 
+  // Precompute normalized name index to speed exact/duplicate lookups and avoid repeated normalization
+  const normIndex = new Map()
+  for (const h of historicalList) {
+    try {
+      const n = normalizeName(h && h.name ? h.name : '')
+      const arr = normIndex.get(n) || []
+      arr.push(h)
+      normIndex.set(n, arr)
+    } catch (e) {
+      // ignore normalization failures per-entry
+    }
+  }
+
   // Convert confidence threshold (0-100) to Fuse.js score (0-1)
   const fuseThreshold = 1 - (confidenceThreshold / 100);
 
-  // build Fuse index
+  // build Fuse index once over historicalList (search uses original names for fuzzy scoring)
   const fuse = new Fuse(historicalList, {
     keys: ['name'],
     threshold: fuseThreshold,
@@ -32,7 +45,8 @@ export function matchPlayers(csvPlayers, historicalData, options = {}) {
     const norm = normalizeName(name);
 
     // exact match attempt (normalized) - prefer same team when available
-    const exactTeam = historicalList.find(h => normalizeName(h.name) === norm && h.team === team);
+    const exactNormArr = normIndex.get(norm) || []
+    const exactTeam = exactNormArr.find(h => h.team === team)
     if (exactTeam) {
       return {
         csvPlayer,
@@ -44,7 +58,7 @@ export function matchPlayers(csvPlayers, historicalData, options = {}) {
     }
 
     // find all exact-normalized matches (to detect duplicates/ambiguous exact matches)
-    const exactNormMatches = historicalList.filter(h => normalizeName(h.name) === norm);
+    const exactNormMatches = exactNormArr
     if (exactNormMatches && exactNormMatches.length === 1) {
       const exact = exactNormMatches[0]
       return {
