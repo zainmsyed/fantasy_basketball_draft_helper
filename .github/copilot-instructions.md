@@ -21,6 +21,7 @@ npm test [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNO
 Vite + vanilla JavaScript (ES2022, compiled to ES2020 for browser compatibility): Follow standard conventions
 
 ## Recent Changes
+- 004-core-logic: Added TypeScript + ES2022 (compiled to ES2020 for browser compatibility) + Alpine.js (reactivity), Tailwind CSS + DaisyUI (styling), Tabulator (data tables)
 - 003-data-integration: Added TypeScript + ES2022 (compiled to ES2020 for browser compatibility) + Alpine.js (reactivity), Tailwind CSS + DaisyUI (styling), Tabulator (data tables)
 - 002-foundation: Added Vite + vanilla JavaScript (ES2022, compiled to ES2020 for browser compatibility) + Alpine.js (~15kb reactivity), Tailwind CSS + DaisyUI (styling), Tabulator (data tables)
 
