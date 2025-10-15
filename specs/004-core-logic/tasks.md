@@ -96,13 +96,20 @@ All paths relative to `frontend/` directory per established project structure
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create StatDisplay module structure in `src/modules/stat-display/index.js`
-- [ ] T027 [P] [US3] Implement stat view configuration in `src/modules/stat-display/display-config.js`
-- [ ] T028 [US3] Create toggle UI component in `src/modules/stat-display/stat-toggle.js` with Alpine.js reactivity
-- [ ] T029 [US3] Implement stat view switching logic in `src/modules/stat-display/view-switcher.js` with <50ms performance
-- [ ] T030 [US3] Update Tabulator integration for dynamic column data updates in `src/modules/stat-display/table-updater.js`
-- [ ] T031 [US3] Ensure punt strategy preservation across stat view changes
-- [ ] T032 [US3] Coordinate with ranking engine to recalculate based on selected stat view
+#### Data Integration (ESPN Projections)
+- [ ] T026 [P] [US3] Create ESPN projections service in `src/services/espn-projections.js` based on discovered API solution
+- [ ] T027 [P] [US3] Implement projected stats fetching with error handling and retry logic in `src/services/projections-fetcher.js`
+- [ ] T028 [P] [US3] Add data validation and normalization for ESPN projection data format consistency
+- [ ] T029 [US3] Create data merger to combine historical stats with projected stats in unified player objects
+
+#### Display Module
+- [ ] T030 [P] [US3] Create StatDisplay module structure in `src/modules/stat-display/index.js`
+- [ ] T031 [P] [US3] Implement stat view configuration in `src/modules/stat-display/display-config.js`
+- [ ] T032 [US3] Create toggle UI component in `src/modules/stat-display/stat-toggle.js` with Alpine.js reactivity
+- [ ] T033 [US3] Implement stat view switching logic in `src/modules/stat-display/view-switcher.js` with <50ms performance
+- [ ] T034 [US3] Update Tabulator integration for dynamic column data updates in `src/modules/stat-display/table-updater.js`
+- [ ] T035 [US3] Ensure punt strategy preservation across stat view changes
+- [ ] T036 [US3] Coordinate with ranking engine to recalculate based on selected stat view
 
 **Checkpoint**: Stat view toggle fully functional - users can switch between projected and historical data
 
@@ -116,13 +123,13 @@ All paths relative to `frontend/` directory per established project structure
 
 ### Implementation for User Story 4
 
-- [ ] T033 [P] [US4] Create VisualIndicators module structure in `src/modules/visual-indicators/index.js`
-- [ ] T034 [P] [US4] Implement best/worst category calculation in `src/modules/visual-indicators/indicator-calculator.js`
-- [ ] T035 [US4] Create Tabulator custom formatters in `src/modules/visual-indicators/table-formatters.js` for green/red highlighting
-- [ ] T036 [US4] Implement CSS classes for visual highlighting in `src/modules/visual-indicators/highlight-styles.js`
-- [ ] T037 [US4] Add dynamic indicator updates when punt strategy changes with <50ms performance
-- [ ] T038 [US4] Ensure proper exclusion of non-statistical columns (GP, Team, Position, Ranks) from highlighting
-- [ ] T039 [US4] Integrate with stat display toggle to update indicators when view changes
+- [ ] T037 [P] [US4] Create VisualIndicators module structure in `src/modules/visual-indicators/index.js`
+- [ ] T038 [P] [US4] Implement best/worst category calculation in `src/modules/visual-indicators/indicator-calculator.js`
+- [ ] T039 [US4] Create Tabulator custom formatters in `src/modules/visual-indicators/table-formatters.js` for green/red highlighting
+- [ ] T040 [US4] Implement CSS classes for visual highlighting in `src/modules/visual-indicators/highlight-styles.js`
+- [ ] T041 [US4] Add dynamic indicator updates when punt strategy changes with <50ms performance
+- [ ] T042 [US4] Ensure proper exclusion of non-statistical columns (GP, Team, Position, Ranks) from highlighting
+- [ ] T043 [US4] Integrate with stat display toggle to update indicators when view changes
 
 **Checkpoint**: Visual indicators fully functional - users can quickly identify player strengths and weaknesses
 
@@ -133,13 +140,15 @@ All paths relative to `frontend/` directory per established project structure
 **Purpose**: Improvements that affect multiple user stories and final integration
 
 - [x] T026 [US2] Fix test failures by installing missing localforage dependency
-- [ ] T040 [P] Performance optimization across all modules to ensure <100ms response times
-- [ ] T041 [P] Error handling improvements for edge cases (missing data, calculation failures)
-- [ ] T042 Add comprehensive logging for debugging ranking calculations and user actions
-- [ ] T043 [P] Code cleanup and TypeScript strict mode compliance across all modules
-- [ ] T044 Integration testing for complete user workflows (rank→punt→toggle→highlight)
-- [ ] T045 [P] Documentation updates for new modules and service interfaces
-- [ ] T046 Memory usage optimization for large player datasets (200+ players)
+- [ ] T044 [P] Performance optimization across all modules to ensure <100ms response times
+- [ ] T045 [P] Error handling improvements for edge cases (missing data, calculation failures, ESPN API failures)
+- [ ] T046 Add comprehensive logging for debugging ranking calculations and user actions
+- [ ] T047 [P] Code cleanup and TypeScript strict mode compliance across all modules
+- [ ] T048 Integration testing for complete user workflows (rank→punt→toggle→highlight)
+- [ ] T049 [P] Documentation updates for new modules and service interfaces
+- [ ] T050 Memory usage optimization for large player datasets (200+ players)
+- [ ] T051 [P] ESPN API rate limiting and caching strategy for projected stats
+- [ ] T052 [P] Data persistence strategy for projected stats (cache duration, refresh triggers)
 
 ---
 
@@ -229,19 +238,21 @@ With multiple developers:
 
 ---
 
-## Performance Targets
+### Performance Targets
 
 ### Critical Requirements
 - **Ranking calculations**: <100ms for 200 players (T014, T016, T022)
 - **Category selection updates**: <100ms for reranking (T022, T025)
-- **Stat view toggle**: <50ms for UI update (T029)
-- **Visual indicator updates**: <50ms for highlighting changes (T037)
+- **Stat view toggle**: <50ms for UI update (T033)
+- **Visual indicator updates**: <50ms for highlighting changes (T041)
+- **ESPN API calls**: <2s with fallback to cached data (T027)
 
 ### Monitoring Tasks
 - T004: Setup performance monitoring utilities
 - T016: Add ranking calculation performance tracking
-- T040: Performance optimization across all modules
-- T046: Memory usage optimization for large datasets
+- T044: Performance optimization across all modules
+- T050: Memory usage optimization for large datasets
+- T051: ESPN API rate limiting and caching strategy
 
 ---
 
@@ -255,3 +266,5 @@ With multiple developers:
 - Modular architecture enables parallel development once foundation is complete
 - Alpine.js reactivity ensures real-time UI updates
 - LocalForage provides persistent storage without external dependencies
+- ESPN API integration provides reliable projected stats data with proper error handling and caching
+- Projected stats will use `proj_` prefix to distinguish from historical stats in data structures
