@@ -1,7 +1,7 @@
 // Table Integration for Ranking Engine
 // Integrates Z-score ranking calculations with Tabulator table display
 
-import { rankingEngine } from '../ranking-engine/index.js';
+import { rankingEngine } from './index.js';
 import { performanceMonitor } from '../../utils/performance.js';
 
 /**
@@ -168,6 +168,8 @@ export class TableIntegration {
   async updateTableWithRankings(rankedPlayers) {
     if (!this.table) return;
 
+    console.log('TableIntegration: Updating table with rankings for', rankedPlayers.length, 'players');
+
     // Create a map for quick lookup
     const rankingMap = new Map();
     rankedPlayers.forEach(player => {
@@ -175,20 +177,25 @@ export class TableIntegration {
     });
 
     // Update existing table data
-    const updatedData = this.table.getData().map(row => {
+    const currentData = this.table.getData();
+    console.log('TableIntegration: Current table data length:', currentData.length);
+
+    const updatedData = currentData.map(row => {
       const player = rankingMap.get(row.id);
       if (player) {
-        return {
+        const updatedRow = {
           ...row,
           algo_rank: player.algoRank,
-          // Could also update other fields if needed
         };
+        console.log(`Updated ${row.name}: algo_rank ${row.algo_rank} -> ${player.algoRank}`);
+        return updatedRow;
       }
       return row;
     });
 
     // Replace table data
     await this.table.replaceData(updatedData);
+    console.log('TableIntegration: Table data replaced');
   }
 
   /**

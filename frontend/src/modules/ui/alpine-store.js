@@ -11,6 +11,8 @@ import { mergeFromPreview } from '../../modules/data/data-merger.js'
 import { validatePlayers } from '../../modules/data/data-validator.js'
 import { transformRowToUploaded, validateMappingComplete } from '../../modules/data/csv-transformer.js'
 import { puntStrategyManager } from '../../modules/punt-strategy/index.js'
+import { tableIntegration } from '../../modules/ranking-engine/table-integration.js'
+import { rankingEngine } from '../../modules/ranking-engine/index.js'
 
 /**
  * Creates the main Alpine.js store for the Basketball Draft Helper application.
@@ -156,6 +158,8 @@ export function createDraftHelperStore() {
 
         // Initialize punt strategy manager
         try {
+          // Initialize ranking engine first
+          await rankingEngine.initialize();
           await puntStrategyManager.initialize()
         } catch (error) {
           console.warn('Failed to initialize punt strategy manager:', error)
@@ -313,6 +317,14 @@ export function createDraftHelperStore() {
       const config = createTableConfig(this.filteredPlayers)
       this.table = new Tabulator('#player-table', config)
       this.table.on('dataSorted', () => this.saveState())
+
+      // Initialize table integration for ranking updates
+      tableIntegration.initialize(this.table)
+
+      // Trigger initial ranking calculation for the loaded data
+      if (this.filteredPlayers && this.filteredPlayers.length > 0) {
+        tableIntegration.updateRankingsForData(this.filteredPlayers)
+      }
 
       // Restore sort state if exists (use field name, not column component)
       const saved = loadUIState()
@@ -1244,13 +1256,11 @@ export function createDraftHelperStore() {
      */
     updateRankings() {
       try {
-        // If we have a table, trigger a data refresh
-        if (this.table && this.table.replaceData) {
-          // Get current data and re-sort (this will trigger ranking recalculation)
-          const currentData = this.table.getData()
-          if (currentData && currentData.length > 0) {
-            this.table.replaceData(currentData)
-          }
+        // Use table integration to recalculate rankings with new categories
+        if (tableIntegration.isReady()) {
+          tableIntegration.recalculateRankings()
+        } else {
+          console.warn('Table integration not ready for ranking updates')
         }
       } catch (error) {
         console.error('Failed to update table rankings:', error)

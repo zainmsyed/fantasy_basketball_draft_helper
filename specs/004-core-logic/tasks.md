@@ -22,10 +22,10 @@ All paths relative to `frontend/` directory per established project structure
 
 **Purpose**: Project initialization and basic structure for core logic modules
 
-- [ ] T001 Create core logic module directories in `src/modules/` (ranking-engine/, punt-strategy/, stat-display/, visual-indicators/)
-- [ ] T002 [P] Create TypeScript type definitions in `src/types/` (player.ts, ranking.ts, strategy.ts)
-- [ ] T003 [P] Create fantasy category constants in `src/data/categories.js` with all 9 statistical categories
-- [ ] T004 [P] Setup performance monitoring utilities in `src/utils/performance.js` for <100ms requirement tracking
+- [x] T001 Create core logic module directories in `src/modules/` (ranking-engine/, punt-strategy/, stat-display/, visual-indicators/)
+- [x] T002 [P] Create TypeScript type definitions in `src/types/` (player.ts, ranking.ts, strategy.ts)
+- [x] T003 [P] Create fantasy category constants in `src/data/categories.js` with all 9 statistical categories
+- [x] T004 [P] Setup performance monitoring utilities in `src/utils/performance.js` for <100ms requirement tracking
 
 ---
 
@@ -35,12 +35,12 @@ All paths relative to `frontend/` directory per established project structure
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Implement pure Z-score calculation functions in `src/utils/calculations.js` (calculateZScore, calculateCategoryStats, calculateStandardDeviation)
-- [ ] T006 [P] Create player qualification checking utilities in `src/utils/validators.js` (checkFGQualification, checkFTQualification)
-- [ ] T007 [P] Implement statistical data formatters in `src/utils/formatters.js` (formatPercentage, formatStatValue)
-- [ ] T008 Create core ranking service interface in `src/services/ranking-service.js` with caching and memoization
-- [ ] T009 Setup LocalForage storage integration in `src/services/storage.js` for punt strategy persistence
-- [ ] T010 [P] Implement error handling patterns for mathematical edge cases (division by zero, empty datasets)
+- [x] T005 Implement pure Z-score calculation functions in `src/utils/calculations.js` (calculateZScore, calculateCategoryStats, calculateStandardDeviation)
+- [x] T006 [P] Create player qualification checking utilities in `src/utils/validators.js` (checkFGQualification, checkFTQualification)
+- [x] T007 [P] Implement statistical data formatters in `src/utils/formatters.js` (formatPercentage, formatStatValue)
+- [x] T008 Create core ranking service interface in `src/services/ranking-service.js` with caching and memoization
+- [x] T009 Setup LocalForage storage integration in `src/services/storage.js` for punt strategy persistence
+- [x] T010 [P] Implement error handling patterns for mathematical edge cases (division by zero, empty datasets)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -54,13 +54,13 @@ All paths relative to `frontend/` directory per established project structure
 
 ### Implementation for User Story 1
 
-- [ ] T011 [P] [US1] Create RankingEngine module structure in `src/modules/ranking-engine/index.js`
-- [ ] T012 [P] [US1] Implement PlayerRanking interface and calculation logic in `src/modules/ranking-engine/player-ranking.js`
-- [ ] T013 [US1] Implement Z-score calculation orchestration in `src/modules/ranking-engine/z-score-calculator.js` (depends on T005-T007)
-- [ ] T014 [US1] Create ranking service implementation in `src/modules/ranking-engine/ranking-service.js` with <100ms performance target
-- [ ] T015 [US1] Integrate with existing Tabulator component to display algo ranks in `src/modules/ranking-engine/table-integration.js`
-- [ ] T016 [US1] Add performance monitoring for ranking calculations to ensure <100ms compliance
-- [ ] T017 [US1] Implement equal weighting logic for all 9 categories with turnover inversion handling
+- [x] T011 [P] [US1] Create RankingEngine module structure in `src/modules/ranking-engine/index.js`
+- [x] T012 [P] [US1] Implement PlayerRanking interface and calculation logic in `src/modules/ranking-engine/player-ranking.js`
+- [x] T013 [US1] Implement Z-score calculation orchestration in `src/modules/ranking-engine/z-score-calculator.js` (depends on T005-T007)
+- [x] T014 [US1] Create ranking service implementation in `src/modules/ranking-engine/ranking-service.js` with <100ms performance target
+- [x] T015 [US1] Integrate with existing Tabulator component to display algo ranks in `src/modules/ranking-engine/table-integration.js`
+- [x] T016 [US1] Add performance monitoring for ranking calculations to ensure <100ms compliance
+- [x] T017 [US1] Implement equal weighting logic for all 9 categories with turnover inversion handling
 
 **Checkpoint**: Z-score algorithm fully functional - users can see algorithmic rankings alongside expert rankings
 
@@ -74,14 +74,15 @@ All paths relative to `frontend/` directory per established project structure
 
 ### Implementation for User Story 2
 
-- [ ] T018 [P] [US2] Create PuntStrategy module structure in `src/modules/punt-strategy/index.js`
-- [ ] T019 [P] [US2] Implement PuntStrategy data model in `src/modules/punt-strategy/strategy-model.js`
-- [ ] T020 [US2] Create category selection UI component in `src/modules/punt-strategy/category-selector.js` with Alpine.js integration
-- [ ] T021 [US2] Implement strategy persistence service in `src/modules/punt-strategy/strategy-storage.js` using LocalForage
-- [ ] T022 [US2] Create real-time ranking update logic in `src/modules/punt-strategy/dynamic-reranking.js` with <100ms performance
-- [ ] T023 [US2] Integrate category selection with ranking engine for immediate recalculation
-- [ ] T024 [US2] Add strategy save/load functionality with name validation and local storage persistence
-- [ ] T025 [US2] Implement auto-reranking when players are marked as drafted
+- [x] T018 [P] [US2] Create PuntStrategy module structure in `src/modules/punt-strategy/index.js`
+- [x] T019 [P] [US2] Implement PuntStrategy data model in `src/modules/punt-strategy/strategy-model.js`
+- [x] T020 [US2] Create category selection UI component in `src/modules/punt-strategy/category-selector.js` with Alpine.js integration
+- [x] T021 [US2] Implement strategy persistence service in `src/modules/punt-strategy/strategy-storage.js` using LocalForage
+- [x] T022 [US2] Create real-time ranking update logic in `src/modules/punt-strategy/dynamic-reranking.js` with <100ms performance
+- [x] T023 [US2] Integrate category selection with ranking engine for immediate recalculation
+- [x] T024 [US2] Add strategy save/load functionality with name validation and local storage persistence
+- [x] T025 [US2] Implement auto-reranking when players are marked as drafted
+- [x] T026 [US2] Fix test failures by installing missing localforage dependency
 
 **Checkpoint**: Punt strategies fully functional - users can customize rankings by excluding categories
 
@@ -131,6 +132,7 @@ All paths relative to `frontend/` directory per established project structure
 
 **Purpose**: Improvements that affect multiple user stories and final integration
 
+- [x] T026 [US2] Fix test failures by installing missing localforage dependency
 - [ ] T040 [P] Performance optimization across all modules to ensure <100ms response times
 - [ ] T041 [P] Error handling improvements for edge cases (missing data, calculation failures)
 - [ ] T042 Add comprehensive logging for debugging ranking calculations and user actions

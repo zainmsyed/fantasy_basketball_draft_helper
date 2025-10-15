@@ -51,6 +51,7 @@ dependencies = [
     { name = "nba-api" },
     { name = "pandas" },
     { name = "python-levenshtein" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -59,6 +60,7 @@ requires-dist = [
     { name = "nba-api", specifier = ">=1.10.2" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "python-levenshtein", specifier = ">=0.27.1" },
+    { name = "requests", specifier = ">=2.32.5" },
 ]
 
 [[package]]
